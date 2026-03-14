@@ -73,7 +73,7 @@ export default function Dashboard() {
       <main className="mx-auto max-w-7xl px-4 py-8">
         {/* Hero Section */}
         <section className="mb-12">
-          <div className="rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-background p-8">
+          <div className="rounded-2xl py-10">
             <h1 className="mb-2 text-3xl font-bold text-balance">Welcome!</h1>
             <p className="mb-6 max-w-xl text-muted-foreground">
               Build interactive polls. Start from scratch or use AI to generate
