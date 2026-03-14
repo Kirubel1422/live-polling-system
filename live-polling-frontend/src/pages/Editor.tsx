@@ -1,5 +1,5 @@
-import { useEffect } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useEffect } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   ChevronLeft,
   Play,
@@ -8,51 +8,59 @@ import {
   Share,
   Sparkles,
   Plus,
-} from 'lucide-react'
-import { useAppDispatch, useAppSelector } from '@/store/hooks'
-import { setSelectedSlide, openAIModal } from '@/store/editorSlice'
-import { addSlide, updatePresentation } from '@/store/presentationsSlice'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Separator } from '@/components/ui/separator'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import SlideList from '@/components/editor/SlideList'
-import SlideCanvas from '@/components/editor/SlideCanvas'
-import RightPanel from '@/components/editor/RightPanel'
-import AddSlideMenu from '@/components/editor/AddSlideMenu'
-import AIGenerationModal from '@/components/AIGenerationModal'
-import { DEFAULT_THEME, ContentSlide } from '@/types/presentation'
-import { nanoid } from 'nanoid'
+} from "lucide-react";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { setSelectedSlide, openAIModal } from "@/store/editorSlice";
+import { addSlide, updatePresentation } from "@/store/presentationsSlice";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import SlideList from "@/components/editor/SlideList";
+import SlideCanvas from "@/components/editor/SlideCanvas";
+import RightPanel from "@/components/editor/RightPanel";
+import AddSlideMenu from "@/components/editor/AddSlideMenu";
+import AIGenerationModal from "@/components/AIGenerationModal";
+import { DEFAULT_THEME, ContentSlide } from "@/types/presentation";
+import { nanoid } from "nanoid";
 
 export default function Editor() {
-  const { presentationId } = useParams<{ presentationId: string }>()
-  const navigate = useNavigate()
-  const dispatch = useAppDispatch()
+  const { presentationId } = useParams<{ presentationId: string }>();
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
 
   const presentation = useAppSelector((state) =>
-    state.presentations.items.find((p) => p.id === presentationId)
-  )
-  const selectedSlideId = useAppSelector((state) => state.editor.selectedSlideId)
-  const isAIModalOpen = useAppSelector((state) => state.editor.isAIModalOpen)
+    state.presentations.items.find((p) => p.id === presentationId),
+  );
+  const selectedSlideId = useAppSelector(
+    (state) => state.editor.selectedSlideId,
+  );
+  const isAIModalOpen = useAppSelector((state) => state.editor.isAIModalOpen);
 
-  const selectedSlide = presentation?.slides.find((s) => s.id === selectedSlideId)
+  const selectedSlide = presentation?.slides.find(
+    (s) => s.id === selectedSlideId,
+  );
 
   // Select first slide on mount if none selected
   useEffect(() => {
     if (presentation && presentation.slides.length > 0 && !selectedSlideId) {
-      dispatch(setSelectedSlide(presentation.slides[0].id))
+      dispatch(setSelectedSlide(presentation.slides[0].id));
     }
-  }, [presentation, selectedSlideId, dispatch])
+  }, [presentation, selectedSlideId, dispatch]);
 
   // Redirect if presentation not found
   useEffect(() => {
     if (!presentation && presentationId) {
-      navigate('/')
+      navigate("/");
     }
-  }, [presentation, presentationId, navigate])
+  }, [presentation, presentationId, navigate]);
 
   if (!presentation) {
-    return null
+    return null;
   }
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -60,30 +68,30 @@ export default function Editor() {
       updatePresentation({
         id: presentation.id,
         updates: { title: e.target.value },
-      })
-    )
-  }
+      }),
+    );
+  };
 
   const handleAddFirstSlide = () => {
     const newSlide: ContentSlide = {
       id: nanoid(),
-      type: 'content',
-      title: 'Welcome',
-      subtitle: 'Click to edit',
-      content: 'Start adding content to your presentation',
-      layout: 'center',
+      type: "content",
+      title: "Welcome",
+      subtitle: "Click to edit",
+      content: "Start adding content to your presentation",
+      layout: "center",
       theme: presentation.theme || DEFAULT_THEME,
       settings: {},
       order: 0,
-    }
+    };
     dispatch(
       addSlide({
         presentationId: presentation.id,
         slide: newSlide,
-      })
-    )
-    dispatch(setSelectedSlide(newSlide.id))
-  }
+      }),
+    );
+    dispatch(setSelectedSlide(newSlide.id));
+  };
 
   return (
     <div className="flex h-screen flex-col bg-background">
@@ -91,7 +99,7 @@ export default function Editor() {
       <header className="flex h-14 items-center justify-between border-b px-4">
         <div className="flex items-center gap-3">
           <Tooltip>
-            <TooltipTrigger asChild>
+            <TooltipTrigger>
               <Button variant="ghost" size="icon-sm" asChild>
                 <Link to="/">
                   <ChevronLeft className="size-4" />
@@ -104,15 +112,11 @@ export default function Editor() {
           <Input
             value={presentation.title}
             onChange={handleTitleChange}
-            className="h-8 w-64 border-transparent bg-transparent px-2 text-sm font-medium hover:border-input focus:border-input"
+            className="h-8 w-64 border-transparent bg-transparent px-2 text-sm text-gray-500 font-medium hover:border-input focus:border-input shadow-none"
           />
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => dispatch(openAIModal())}>
-            <Sparkles className="size-4" />
-            AI Generate
-          </Button>
           <Separator orientation="vertical" className="h-6" />
           <Tooltip>
             <TooltipTrigger asChild>
@@ -147,11 +151,13 @@ export default function Editor() {
       {/* Main Editor Area */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left Panel - Slide List */}
-        <div className="flex w-64 flex-col border-r bg-muted/30">
-          <div className="flex items-center justify-between border-b p-3">
-            <span className="text-sm font-medium">Slides</span>
-            <AddSlideMenu presentationId={presentation.id} />
+        <div className="flex w-64 pt-3 flex-col bg-gray-100">
+          <div className="flex mr-auto pl-10">
+            <Button size="lg">
+              New Slide <AddSlideMenu presentationId={presentation.id} />
+            </Button>
           </div>
+
           {presentation.slides.length === 0 ? (
             <div className="flex flex-1 flex-col items-center justify-center p-4">
               <p className="mb-3 text-center text-sm text-muted-foreground">
@@ -172,19 +178,13 @@ export default function Editor() {
         </div>
 
         {/* Center - Canvas */}
-        <div className="flex flex-1 flex-col">
-          <SlideCanvas
-            slide={selectedSlide}
-            presentationId={presentation.id}
-          />
+        <div className="flex flex-1 bg-gray-100 flex-col">
+          <SlideCanvas slide={selectedSlide} presentationId={presentation.id} />
         </div>
 
         {/* Right Panel - Properties */}
         {selectedSlide && (
-          <RightPanel
-            slide={selectedSlide}
-            presentationId={presentation.id}
-          />
+          <RightPanel slide={selectedSlide} presentationId={presentation.id} />
         )}
       </div>
 
@@ -193,10 +193,10 @@ export default function Editor() {
         open={isAIModalOpen}
         onOpenChange={(open) => {
           if (!open) {
-            dispatch({ type: 'editor/closeAIModal' })
+            dispatch({ type: "editor/closeAIModal" });
           }
         }}
       />
     </div>
-  )
+  );
 }

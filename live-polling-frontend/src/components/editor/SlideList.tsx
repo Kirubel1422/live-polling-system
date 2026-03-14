@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo } from "react";
 import {
   DndContext,
   closestCenter,
@@ -7,24 +7,24 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
-} from '@dnd-kit/core'
+} from "@dnd-kit/core";
 import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
-} from '@dnd-kit/sortable'
-import { useAppDispatch } from '@/store/hooks'
-import { reorderSlides } from '@/store/presentationsSlice'
-import { setSelectedSlide } from '@/store/editorSlice'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Slide } from '@/types/presentation'
-import SlideThumbnail from './SlideThumbnail'
+} from "@dnd-kit/sortable";
+import { useAppDispatch } from "@/store/hooks";
+import { reorderSlides } from "@/store/presentationsSlice";
+import { setSelectedSlide } from "@/store/editorSlice";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Slide } from "@/types/presentation";
+import SlideThumbnail from "./SlideThumbnail";
 
 interface SlideListProps {
-  slides: Slide[]
-  selectedSlideId: string | null
-  presentationId: string
+  slides: Slide[];
+  selectedSlideId: string | null;
+  presentationId: string;
 }
 
 export default function SlideList({
@@ -32,7 +32,7 @@ export default function SlideList({
   selectedSlideId,
   presentationId,
 }: SlideListProps) {
-  const dispatch = useAppDispatch()
+  const dispatch = useAppDispatch();
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -42,34 +42,34 @@ export default function SlideList({
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
-  )
+    }),
+  );
 
   const sortedSlides = useMemo(
     () => [...slides].sort((a, b) => a.order - b.order),
-    [slides]
-  )
+    [slides],
+  );
 
   const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event
+    const { active, over } = event;
 
     if (over && active.id !== over.id) {
-      const oldIndex = sortedSlides.findIndex((s) => s.id === active.id)
-      const newIndex = sortedSlides.findIndex((s) => s.id === over.id)
-      const newOrder = arrayMove(sortedSlides, oldIndex, newIndex)
+      const oldIndex = sortedSlides.findIndex((s) => s.id === active.id);
+      const newIndex = sortedSlides.findIndex((s) => s.id === over.id);
+      const newOrder = arrayMove(sortedSlides, oldIndex, newIndex);
 
       dispatch(
         reorderSlides({
           presentationId,
           slideIds: newOrder.map((s) => s.id),
-        })
-      )
+        }),
+      );
     }
-  }
+  };
 
   const handleSelectSlide = (slideId: string) => {
-    dispatch(setSelectedSlide(slideId))
-  }
+    dispatch(setSelectedSlide(slideId));
+  };
 
   return (
     <ScrollArea className="flex-1">
@@ -97,5 +97,5 @@ export default function SlideList({
         </SortableContext>
       </DndContext>
     </ScrollArea>
-  )
+  );
 }

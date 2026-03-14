@@ -1,25 +1,25 @@
-import { useSortable } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
-import { Copy, GripVertical, MoreHorizontal, Trash2 } from 'lucide-react'
-import { useAppDispatch } from '@/store/hooks'
-import { deleteSlide, duplicateSlide } from '@/store/presentationsSlice'
-import { Button } from '@/components/ui/button'
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { Copy, GripVertical, MoreHorizontal, Trash2 } from "lucide-react";
+import { useAppDispatch } from "@/store/hooks";
+import { deleteSlide, duplicateSlide } from "@/store/presentationsSlice";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { cn } from '@/lib/utils'
-import { Slide, SLIDE_TYPE_INFO } from '@/types/presentation'
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
+import { Slide, SLIDE_TYPE_INFO } from "@/types/presentation";
 
 interface SlideThumbnailProps {
-  slide: Slide
-  index: number
-  isSelected: boolean
-  onClick: () => void
-  presentationId: string
+  slide: Slide;
+  index: number;
+  isSelected: boolean;
+  onClick: () => void;
+  presentationId: string;
 }
 
 export default function SlideThumbnail({
@@ -29,7 +29,7 @@ export default function SlideThumbnail({
   onClick,
   presentationId,
 }: SlideThumbnailProps) {
-  const dispatch = useAppDispatch()
+  const dispatch = useAppDispatch();
   const {
     attributes,
     listeners,
@@ -37,39 +37,37 @@ export default function SlideThumbnail({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: slide.id })
+  } = useSortable({ id: slide.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-  }
+  };
 
   const handleDelete = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    dispatch(deleteSlide({ presentationId, slideId: slide.id }))
-  }
+    e.stopPropagation();
+    dispatch(deleteSlide({ presentationId, slideId: slide.id }));
+  };
 
   const handleDuplicate = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    dispatch(duplicateSlide({ presentationId, slideId: slide.id }))
-  }
+    e.stopPropagation();
+    dispatch(duplicateSlide({ presentationId, slideId: slide.id }));
+  };
 
-  const typeInfo = SLIDE_TYPE_INFO[slide.type]
+  const typeInfo = SLIDE_TYPE_INFO[slide.type];
 
   return (
     <div
       ref={setNodeRef}
       style={style}
       className={cn(
-        'group relative rounded-lg border bg-card transition-all',
-        isSelected
-          ? 'border-primary ring-2 ring-primary/20'
-          : 'border-transparent hover:border-border',
-        isDragging && 'opacity-50'
+        "group relative border-transparent rounded-xl h-26 w-3/4 mx-auto border bg-card transition-all",
+        isSelected ? "ring-2 ring-accent/60" : "hover:border-border",
+        isDragging && "opacity-50",
       )}
       onClick={onClick}
     >
-      <div className="flex items-start gap-2 p-2">
+      <div className="flex items-start gap-2 p-2 h-26">
         {/* Drag Handle */}
         <button
           {...attributes}
@@ -82,24 +80,22 @@ export default function SlideThumbnail({
         {/* Thumbnail Preview */}
         <div className="flex-1">
           <div
-            className="mb-1.5 aspect-video w-full rounded border"
+            className="mb-1.5 h-full  w-full rounded border"
             style={{ backgroundColor: slide.theme.backgroundColor }}
           >
-            <div className="flex h-full flex-col items-center justify-center p-2">
+            <div className="flex h-20 flex-col items-center justify-center p-2">
               <p
                 className="text-[8px] font-medium leading-tight text-center line-clamp-2"
                 style={{ color: slide.theme.textColor }}
               >
-                {slide.title || 'Untitled'}
+                {slide.title || "Untitled"}
               </p>
             </div>
           </div>
+
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">
-              {index + 1}. {typeInfo?.label || slide.type}
-            </span>
             <DropdownMenu>
-              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+              <DropdownMenuTrigger onClick={(e) => e.stopPropagation()}>
                 <Button
                   variant="ghost"
                   size="icon-sm"
@@ -124,5 +120,5 @@ export default function SlideThumbnail({
         </div>
       </div>
     </div>
-  )
+  );
 }
