@@ -15,18 +15,18 @@ export default function TemplatesList({
           View all
         </Button>
       </div>
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
+      <div className="grid bg-primary/10 rounded-2xl p-7 grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
         {TEMPLATES.map((template) => (
           <Card
             key={template.id}
-            className="group cursor-pointer overflow-hidden border-0 py-0 shadow-sm transition-all"
+            className="group -space-y-6 cursor-pointer overflow-hidden border-none py-0 transition-all shadow-none"
             onClick={() => handleCreateFromTemplate(template.id)}
           >
             <div
               className="aspect-[4/3] w-full"
               style={{ background: template.thumbnail }}
             />
-            <CardContent className="p-3">
+            <CardContent className="p-3 border-none">
               <p className="font-medium text-sm">{template.title}</p>
               <p className="text-xs text-muted-foreground line-clamp-1">
                 {template.description}
