@@ -1,6 +1,16 @@
+import { useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { Button } from "../ui/button";
-import { Copy, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+  Copy,
+  LayoutGrid,
+  List,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  SparkleIcon,
+  Trash2,
+} from "lucide-react";
 import { Card, CardContent } from "../ui/card";
 import {
   DropdownMenu,
@@ -12,7 +22,7 @@ import {
 import { ScrollArea } from "../ui/scroll-area";
 import { Badge } from "../ui/badge";
 import { format } from "date-fns";
-import { getStatusColor } from "@/lib";
+import { cn, getStatusColor } from "@/lib";
 import {
   deletePresentation,
   duplicatePresentation,
@@ -28,6 +38,7 @@ export default function RecentPresentations({
   handleOpenPresentation: (id: string) => void;
 }) {
   const dispatch = useAppDispatch();
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const presentations = useAppSelector((state) => state.presentations.items);
   const filteredPresentations = presentations.filter((p) =>
     p.title.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -40,14 +51,36 @@ export default function RecentPresentations({
   const handleDuplicatePresentation = (id: string) => {
     dispatch(duplicatePresentation(id));
   };
+
   return (
     <section>
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold">Your Presentations</h2>
-        <span className="text-sm text-muted-foreground">
-          {presentations.length} presentation
-          {presentations.length !== 1 ? "s" : ""}
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-muted-foreground">
+            {presentations.length} presentation
+            {presentations.length !== 1 ? "s" : ""}
+          </span>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="ml-1"
+            onClick={() =>
+              setViewMode((prev) => (prev === "grid" ? "list" : "grid"))
+            }
+            aria-label={
+              viewMode === "grid"
+                ? "Switch to list view"
+                : "Switch to grid view"
+            }
+          >
+            {viewMode === "grid" ? (
+              <List className="size-4" />
+            ) : (
+              <LayoutGrid className="size-4" />
+            )}
+          </Button>
+        </div>
       </div>
 
       {filteredPresentations.length === 0 ? (
@@ -65,16 +98,26 @@ export default function RecentPresentations({
           </Button>
         </div>
       ) : (
-        <ScrollArea className="h-[400px]">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ScrollArea className="h-[400px] mb-4 pb-4">
+          <div
+            className={
+              viewMode === "grid"
+                ? "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                : "flex flex-col gap-4 bg-primary/10 p-7 rounded-2xl"
+            }
+          >
             {filteredPresentations.map((presentation) => (
               <Card
                 key={presentation.id}
-                className="group cursor-pointer overflow-hidden py-0 transition-all hover:shadow-md"
+                className={`group cursor-pointer rounded-none overflow-hidden py-0 transition-all border-none shadow-none ${
+                  viewMode === "list" && "flex border rounded-2xl"
+                }`}
                 onClick={() => handleOpenPresentation(presentation.id)}
               >
                 <div
-                  className="aspect-video w-full"
+                  className={
+                    viewMode === "grid" ? "h-36 rounded-2xl w-full" : "hidden"
+                  }
                   style={{
                     background:
                       presentation.thumbnail ||
@@ -87,11 +130,30 @@ export default function RecentPresentations({
                     </span>
                   </div>
                 </div>
-                <CardContent className="p-4">
+
+                <CardContent
+                  className={`${viewMode === "list" ? "flex-1 p-6" : "px-4 pb-3"} relative`}
+                >
                   <div className="mb-2 flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium truncate">
-                        {presentation.title}
+                    <div
+                      className={cn(
+                        "flex-1 space-y-1 min-w-0",
+                        viewMode == "list" && "space-y-3",
+                      )}
+                    >
+                      <h3
+                        className={cn(
+                          "truncate text-sm",
+                          viewMode == "grid" && "font-medium",
+                        )}
+                      >
+                        {presentation.title}{" "}
+                        {presentation.isAIGenerated && (
+                          <Badge className="ml-2 bg-blue-500/80">
+                            <SparkleIcon />
+                            AI Generated
+                          </Badge>
+                        )}
                       </h3>
                       <p className="text-xs text-muted-foreground">
                         {presentation.slides.length} slide
@@ -102,6 +164,7 @@ export default function RecentPresentations({
                         )}
                       </p>
                     </div>
+
                     <DropdownMenu>
                       <DropdownMenuTrigger onClick={(e) => e.stopPropagation()}>
                         <Button
