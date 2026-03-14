@@ -10,7 +10,7 @@ export const getStatusColor = (status: string) => {
     case "published":
       return "bg-success text-success-foreground";
     case "draft":
-      return "bg-warning text-warning-foreground";
+      return "!bg-muted !text-muted-foreground";
     case "archived":
       return "bg-muted text-muted-foreground";
     default:
