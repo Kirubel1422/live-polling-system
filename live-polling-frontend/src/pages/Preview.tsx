@@ -1,3 +1,4 @@
+/** Preview page for presenting a presentation in fullscreen. */
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
