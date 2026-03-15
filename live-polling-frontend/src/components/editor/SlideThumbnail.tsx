@@ -1,6 +1,6 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Copy, GripVertical, MoreHorizontal, Trash2 } from "lucide-react";
+import { Copy, MoreHorizontal, Trash2 } from "lucide-react";
 import { useAppDispatch } from "@/store/hooks";
 import { deleteSlide, duplicateSlide } from "@/store/presentationsSlice";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { Slide, SLIDE_TYPE_INFO } from "@/types/presentation";
+import { renderSlideContent } from "./SlideCanvas";
 
 interface SlideThumbnailProps {
   slide: Slide;
@@ -54,8 +55,6 @@ export default function SlideThumbnail({
     dispatch(duplicateSlide({ presentationId, slideId: slide.id }));
   };
 
-  const typeInfo = SLIDE_TYPE_INFO[slide.type];
-
   return (
     <div
       ref={setNodeRef}
@@ -67,33 +66,26 @@ export default function SlideThumbnail({
       )}
       onClick={onClick}
     >
-      <div className="flex items-start gap-2 p-2 h-26">
-        {/* Drag Handle */}
-        <button
-          {...attributes}
-          {...listeners}
-          className="mt-1 cursor-grab rounded p-0.5 opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100 active:cursor-grabbing"
-        >
-          <GripVertical className="size-3 text-muted-foreground" />
-        </button>
-
+      <span className="absolute -left-4 text-sm text-neutral-500">
+        {++index}
+      </span>
+      <div
+        {...attributes}
+        {...listeners}
+        className="flex items-start gap-2 p-2  overflow-x-hidden"
+      >
         {/* Thumbnail Preview */}
-        <div className="flex-1">
+        <div className="flex-1 cursor-grab">
           <div
-            className="mb-1.5 h-full  w-full rounded border"
+            className="mb-1.5 h-full  w-full"
             style={{ backgroundColor: slide.theme.backgroundColor }}
           >
-            <div className="flex h-20 flex-col items-center justify-center p-2">
-              <p
-                className="text-[8px] font-medium leading-tight text-center line-clamp-2"
-                style={{ color: slide.theme.textColor }}
-              >
-                {slide.title || "Untitled"}
-              </p>
+            <div className="flex h-20 w-full flex-col items-center justify-center overflow-hidden p-2 *:min-h-0">
+              {renderSlideContent(slide, "list")}
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex absolute right-0 top-0 items-center justify-between">
             <DropdownMenu>
               <DropdownMenuTrigger onClick={(e) => e.stopPropagation()}>
                 <Button
@@ -101,9 +93,10 @@ export default function SlideThumbnail({
                   size="icon-sm"
                   className="size-5 opacity-0 group-hover:opacity-100"
                 >
-                  <MoreHorizontal className="size-3" />
+                  <MoreHorizontal className="size-4" />
                 </Button>
               </DropdownMenuTrigger>
+
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={handleDuplicate}>
                   <Copy className="size-4" />
