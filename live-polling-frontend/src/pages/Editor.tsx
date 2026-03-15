@@ -1,3 +1,4 @@
+/** Editor page for creating and editing presentation slides. */
 import { useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { ChevronLeft, Play, Save, Settings, Share, Plus } from "lucide-react";
