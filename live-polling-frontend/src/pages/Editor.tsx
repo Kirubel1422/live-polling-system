@@ -1,16 +1,8 @@
 import { useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import {
-  ChevronLeft,
-  Play,
-  Save,
-  Settings,
-  Share,
-  Sparkles,
-  Plus,
-} from "lucide-react";
+import { ChevronLeft, Play, Save, Settings, Share, Plus } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setSelectedSlide, openAIModal } from "@/store/editorSlice";
+import { setSelectedSlide } from "@/store/editorSlice";
 import { addSlide, updatePresentation } from "@/store/presentationsSlice";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -94,9 +86,9 @@ export default function Editor() {
   };
 
   return (
-    <div className="flex h-screen flex-col bg-background">
+    <div className="flex h-screen flex-col bg-[#eeeeee]">
       {/* Top Toolbar */}
-      <header className="flex h-14 items-center justify-between border-b px-4">
+      <header className="flex h-14 items-center bg-background justify-between border-b px-4">
         <div className="flex items-center gap-3">
           <Tooltip>
             <TooltipTrigger>
@@ -149,13 +141,11 @@ export default function Editor() {
       </header>
 
       {/* Main Editor Area */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-x-hidden">
         {/* Left Panel - Slide List */}
-        <div className="flex w-64 pt-3 flex-col bg-gray-100">
+        <div className="flex w-64 pt-3 flex-col">
           <div className="flex mr-auto pl-10">
-            <Button size="lg">
-              New Slide <AddSlideMenu presentationId={presentation.id} />
-            </Button>
+            <AddSlideMenu presentationId={presentation.id} />
           </div>
 
           {presentation.slides.length === 0 ? (
@@ -178,7 +168,7 @@ export default function Editor() {
         </div>
 
         {/* Center - Canvas */}
-        <div className="flex flex-1 bg-gray-100 flex-col">
+        <div className="flex flex-1 flex-col">
           <SlideCanvas slide={selectedSlide} presentationId={presentation.id} />
         </div>
 
