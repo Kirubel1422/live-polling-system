@@ -67,7 +67,7 @@ export default function RightPanel({ slide, presentationId }: RightPanelProps) {
 
   return (
     <div className="flex h-full mr-2 max-w-120">
-      {/* Content area (left) – slides in from the right when tab is active */}
+      {/* Right panel: content area (left) slides in from the right when tab is active */}
       <div className="min-w-0 flex-1 overflow-hidden w-120">
         <ScrollArea className="h-full ">
           <div
