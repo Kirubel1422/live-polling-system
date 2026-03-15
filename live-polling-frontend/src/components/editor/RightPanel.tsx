@@ -1,20 +1,27 @@
-import { useAppDispatch, useAppSelector } from '@/store/hooks'
-import { setRightPanelTab } from '@/store/editorSlice'
-import { updateSlide } from '@/store/presentationsSlice'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
-import { Slider } from '@/components/ui/slider'
-import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
-import { Plus, Trash2, GripVertical } from 'lucide-react'
-import { 
-  Slide, 
-  MultipleChoiceSlide, 
-  QuizSlide, 
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { setRightPanelTab } from "@/store/editorSlice";
+import { updateSlide } from "@/store/presentationsSlice";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
+import {
+  FileText,
+  Palette,
+  Plus,
+  Settings,
+  Trash2,
+  GripVertical,
+} from "lucide-react";
+import {
+  Slide,
+  MultipleChoiceSlide,
+  QuizSlide,
   SlideOption,
   RatingSlide,
   RankingSlide,
@@ -26,17 +33,17 @@ import {
   ImageChoiceSlide,
   QASlide,
   THEMES,
-} from '@/types/presentation'
-import { nanoid } from 'nanoid'
+} from "@/types/presentation";
+import { nanoid } from "nanoid";
 
 interface RightPanelProps {
-  slide: Slide
-  presentationId: string
+  slide: Slide;
+  presentationId: string;
 }
 
 export default function RightPanel({ slide, presentationId }: RightPanelProps) {
-  const dispatch = useAppDispatch()
-  const activeTab = useAppSelector((state) => state.editor.rightPanelTab)
+  const dispatch = useAppDispatch();
+  const activeTab = useAppSelector((state) => state.editor.rightPanelTab);
 
   const handleUpdateSlide = (updates: Partial<Slide>) => {
     dispatch(
@@ -44,49 +51,69 @@ export default function RightPanel({ slide, presentationId }: RightPanelProps) {
         presentationId,
         slideId: slide.id,
         updates,
-      })
-    )
-  }
+      }),
+    );
+  };
+
+  const tabs: {
+    id: "content" | "design" | "settings";
+    label: string;
+    icon: typeof FileText;
+  }[] = [
+    { id: "content", label: "Edit", icon: FileText },
+    { id: "design", label: "Design", icon: Palette },
+    { id: "settings", label: "Settings", icon: Settings },
+  ];
 
   return (
-    <div className="w-80 border-l bg-background">
-      <Tabs
-        value={activeTab}
-        onValueChange={(v) =>
-          dispatch(setRightPanelTab(v as 'content' | 'design' | 'settings'))
-        }
-        className="flex h-full flex-col"
-      >
-        <TabsList className="mx-3 mt-3 w-auto">
-          <TabsTrigger value="content" className="flex-1">
-            Content
-          </TabsTrigger>
-          <TabsTrigger value="design" className="flex-1">
-            Design
-          </TabsTrigger>
-          <TabsTrigger value="settings" className="flex-1">
-            Settings
-          </TabsTrigger>
-        </TabsList>
-
-        <ScrollArea className="flex-1">
-          <TabsContent value="content" className="m-0 p-4">
-            <ContentTab
-              slide={slide}
-              onUpdate={handleUpdateSlide}
-              presentationId={presentationId}
-            />
-          </TabsContent>
-          <TabsContent value="design" className="m-0 p-4">
-            <DesignTab slide={slide} onUpdate={handleUpdateSlide} />
-          </TabsContent>
-          <TabsContent value="settings" className="m-0 p-4">
-            <SettingsTab slide={slide} onUpdate={handleUpdateSlide} />
-          </TabsContent>
+    <div className="flex h-full mr-2 max-w-120">
+      {/* Content area (left) – slides in from the right when tab is active */}
+      <div className="min-w-0 flex-1 overflow-hidden w-120">
+        <ScrollArea className="h-full ">
+          <div
+            key={activeTab}
+            className="animate-in slide-in-from-right-4 fade-in-0 flex flex-col gap-4 p-4 duration-200"
+          >
+            {activeTab === "content" && (
+              <ContentTab
+                slide={slide}
+                onUpdate={handleUpdateSlide}
+                presentationId={presentationId}
+              />
+            )}
+            {activeTab === "design" && (
+              <DesignTab slide={slide} onUpdate={handleUpdateSlide} />
+            )}
+            {activeTab === "settings" && (
+              <SettingsTab slide={slide} onUpdate={handleUpdateSlide} />
+            )}
+          </div>
         </ScrollArea>
-      </Tabs>
+      </div>
+
+      {/* Vertical tabs (right) */}
+      <div className="flex shrink-0 flex-col mt-4 h-fit border-l border-border/60 bg-white p-1 rounded-2xl">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => dispatch(setRightPanelTab(tab.id))}
+              className={cn(
+                "flex flex-col items-center gap-1 px-7 py-8 text-xs font-medium transition-colors",
+                isActive && "border border-primary bg-primary/10 rounded-2xl",
+              )}
+            >
+              <Icon className="size-4 shrink-0" />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
-  )
+  );
 }
 
 function ContentTab({
@@ -94,22 +121,36 @@ function ContentTab({
   onUpdate,
   presentationId,
 }: {
-  slide: Slide
-  onUpdate: (updates: Partial<Slide>) => void
-  presentationId: string
+  slide: Slide;
+  onUpdate: (updates: Partial<Slide>) => void;
+  presentationId: string;
 }) {
-  const dispatch = useAppDispatch()
+  const dispatch = useAppDispatch();
 
   const handleAddOption = () => {
-    if (slide.type === 'multiple-choice' || slide.type === 'quiz' || slide.type === 'image-choice') {
-      const currentSlide = slide as MultipleChoiceSlide | QuizSlide | ImageChoiceSlide
-      const colors = ['#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e']
+    if (
+      slide.type === "multiple-choice" ||
+      slide.type === "quiz" ||
+      slide.type === "image-choice"
+    ) {
+      const currentSlide = slide as
+        | MultipleChoiceSlide
+        | QuizSlide
+        | ImageChoiceSlide;
+      const colors = [
+        "#6366f1",
+        "#8b5cf6",
+        "#a855f7",
+        "#d946ef",
+        "#ec4899",
+        "#f43f5e",
+      ];
       const newOption: SlideOption = {
         id: nanoid(),
         text: `Option ${currentSlide.options.length + 1}`,
         color: colors[currentSlide.options.length % colors.length],
         isCorrect: false,
-      }
+      };
       dispatch(
         updateSlide({
           presentationId,
@@ -117,20 +158,27 @@ function ContentTab({
           updates: {
             options: [...currentSlide.options, newOption],
           },
-        })
-      )
+        }),
+      );
     }
-  }
+  };
 
   const handleAddRankingItem = () => {
-    if (slide.type === 'ranking') {
-      const currentSlide = slide as RankingSlide
-      const colors = ['#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e']
+    if (slide.type === "ranking") {
+      const currentSlide = slide as RankingSlide;
+      const colors = [
+        "#6366f1",
+        "#8b5cf6",
+        "#a855f7",
+        "#d946ef",
+        "#ec4899",
+        "#f43f5e",
+      ];
       const newItem: SlideOption = {
         id: nanoid(),
         text: `Item ${currentSlide.items.length + 1}`,
         color: colors[currentSlide.items.length % colors.length],
-      }
+      };
       dispatch(
         updateSlide({
           presentationId,
@@ -138,20 +186,27 @@ function ContentTab({
           updates: {
             items: [...currentSlide.items, newItem],
           },
-        })
-      )
+        }),
+      );
     }
-  }
+  };
 
   const handleAddPointsItem = () => {
-    if (slide.type === '100-points') {
-      const currentSlide = slide as PointsSlide
-      const colors = ['#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e']
+    if (slide.type === "100-points") {
+      const currentSlide = slide as PointsSlide;
+      const colors = [
+        "#6366f1",
+        "#8b5cf6",
+        "#a855f7",
+        "#d946ef",
+        "#ec4899",
+        "#f43f5e",
+      ];
       const newItem: SlideOption = {
         id: nanoid(),
         text: `Item ${currentSlide.items.length + 1}`,
         color: colors[currentSlide.items.length % colors.length],
-      }
+      };
       dispatch(
         updateSlide({
           presentationId,
@@ -159,147 +214,179 @@ function ContentTab({
           updates: {
             items: [...currentSlide.items, newItem],
           },
-        })
-      )
+        }),
+      );
     }
-  }
+  };
 
   const handleAddName = () => {
-    if (slide.type === 'wheel-of-names') {
-      const currentSlide = slide as WheelSlide
+    if (slide.type === "wheel-of-names") {
+      const currentSlide = slide as WheelSlide;
       dispatch(
         updateSlide({
           presentationId,
           slideId: slide.id,
           updates: {
-            names: [...currentSlide.names, `Name ${currentSlide.names.length + 1}`],
+            names: [
+              ...currentSlide.names,
+              `Name ${currentSlide.names.length + 1}`,
+            ],
           },
-        })
-      )
+        }),
+      );
     }
-  }
+  };
 
-  const handleUpdateOption = (optionId: string, updates: Partial<SlideOption>) => {
-    if (slide.type === 'multiple-choice' || slide.type === 'quiz' || slide.type === 'image-choice') {
-      const currentSlide = slide as MultipleChoiceSlide | QuizSlide | ImageChoiceSlide
+  const handleUpdateOption = (
+    optionId: string,
+    updates: Partial<SlideOption>,
+  ) => {
+    if (
+      slide.type === "multiple-choice" ||
+      slide.type === "quiz" ||
+      slide.type === "image-choice"
+    ) {
+      const currentSlide = slide as
+        | MultipleChoiceSlide
+        | QuizSlide
+        | ImageChoiceSlide;
       const updatedOptions = currentSlide.options.map((opt) =>
-        opt.id === optionId ? { ...opt, ...updates } : opt
-      )
+        opt.id === optionId ? { ...opt, ...updates } : opt,
+      );
       dispatch(
         updateSlide({
           presentationId,
           slideId: slide.id,
           updates: { options: updatedOptions },
-        })
-      )
+        }),
+      );
     }
-  }
+  };
 
-  const handleUpdateRankingItem = (itemId: string, updates: Partial<SlideOption>) => {
-    if (slide.type === 'ranking') {
-      const currentSlide = slide as RankingSlide
+  const handleUpdateRankingItem = (
+    itemId: string,
+    updates: Partial<SlideOption>,
+  ) => {
+    if (slide.type === "ranking") {
+      const currentSlide = slide as RankingSlide;
       const updatedItems = currentSlide.items.map((item) =>
-        item.id === itemId ? { ...item, ...updates } : item
-      )
+        item.id === itemId ? { ...item, ...updates } : item,
+      );
       dispatch(
         updateSlide({
           presentationId,
           slideId: slide.id,
           updates: { items: updatedItems },
-        })
-      )
+        }),
+      );
     }
-  }
+  };
 
-  const handleUpdatePointsItem = (itemId: string, updates: Partial<SlideOption>) => {
-    if (slide.type === '100-points') {
-      const currentSlide = slide as PointsSlide
+  const handleUpdatePointsItem = (
+    itemId: string,
+    updates: Partial<SlideOption>,
+  ) => {
+    if (slide.type === "100-points") {
+      const currentSlide = slide as PointsSlide;
       const updatedItems = currentSlide.items.map((item) =>
-        item.id === itemId ? { ...item, ...updates } : item
-      )
+        item.id === itemId ? { ...item, ...updates } : item,
+      );
       dispatch(
         updateSlide({
           presentationId,
           slideId: slide.id,
           updates: { items: updatedItems },
-        })
-      )
+        }),
+      );
     }
-  }
+  };
 
   const handleDeleteOption = (optionId: string) => {
-    if (slide.type === 'multiple-choice' || slide.type === 'quiz' || slide.type === 'image-choice') {
-      const currentSlide = slide as MultipleChoiceSlide | QuizSlide | ImageChoiceSlide
-      const updatedOptions = currentSlide.options.filter((opt) => opt.id !== optionId)
+    if (
+      slide.type === "multiple-choice" ||
+      slide.type === "quiz" ||
+      slide.type === "image-choice"
+    ) {
+      const currentSlide = slide as
+        | MultipleChoiceSlide
+        | QuizSlide
+        | ImageChoiceSlide;
+      const updatedOptions = currentSlide.options.filter(
+        (opt) => opt.id !== optionId,
+      );
       dispatch(
         updateSlide({
           presentationId,
           slideId: slide.id,
           updates: { options: updatedOptions },
-        })
-      )
+        }),
+      );
     }
-  }
+  };
 
   const handleDeleteRankingItem = (itemId: string) => {
-    if (slide.type === 'ranking') {
-      const currentSlide = slide as RankingSlide
-      const updatedItems = currentSlide.items.filter((item) => item.id !== itemId)
+    if (slide.type === "ranking") {
+      const currentSlide = slide as RankingSlide;
+      const updatedItems = currentSlide.items.filter(
+        (item) => item.id !== itemId,
+      );
       dispatch(
         updateSlide({
           presentationId,
           slideId: slide.id,
           updates: { items: updatedItems },
-        })
-      )
+        }),
+      );
     }
-  }
+  };
 
   const handleDeletePointsItem = (itemId: string) => {
-    if (slide.type === '100-points') {
-      const currentSlide = slide as PointsSlide
-      const updatedItems = currentSlide.items.filter((item) => item.id !== itemId)
+    if (slide.type === "100-points") {
+      const currentSlide = slide as PointsSlide;
+      const updatedItems = currentSlide.items.filter(
+        (item) => item.id !== itemId,
+      );
       dispatch(
         updateSlide({
           presentationId,
           slideId: slide.id,
           updates: { items: updatedItems },
-        })
-      )
+        }),
+      );
     }
-  }
+  };
 
   const handleUpdateName = (index: number, value: string) => {
-    if (slide.type === 'wheel-of-names') {
-      const currentSlide = slide as WheelSlide
-      const updatedNames = [...currentSlide.names]
-      updatedNames[index] = value
+    if (slide.type === "wheel-of-names") {
+      const currentSlide = slide as WheelSlide;
+      const updatedNames = [...currentSlide.names];
+      updatedNames[index] = value;
       dispatch(
         updateSlide({
           presentationId,
           slideId: slide.id,
           updates: { names: updatedNames },
-        })
-      )
+        }),
+      );
     }
-  }
+  };
 
   const handleDeleteName = (index: number) => {
-    if (slide.type === 'wheel-of-names') {
-      const currentSlide = slide as WheelSlide
-      const updatedNames = currentSlide.names.filter((_, i) => i !== index)
+    if (slide.type === "wheel-of-names") {
+      const currentSlide = slide as WheelSlide;
+      const updatedNames = currentSlide.names.filter((_, i) => i !== index);
       dispatch(
         updateSlide({
           presentationId,
           slideId: slide.id,
           updates: { names: updatedNames },
-        })
-      )
+        }),
+      );
     }
-  }
+  };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-zinc-50 p-10 rounded-2xl">
       {/* Common fields */}
       <div className="space-y-2">
         <Label htmlFor="title">Title</Label>
@@ -315,19 +402,19 @@ function ContentTab({
         <Label htmlFor="subtitle">Subtitle</Label>
         <Input
           id="subtitle"
-          value={slide.subtitle || ''}
+          value={slide.subtitle || ""}
           onChange={(e) => onUpdate({ subtitle: e.target.value })}
           placeholder="Optional subtitle"
         />
       </div>
 
       {/* Content field for content slides */}
-      {slide.type === 'content' && (
+      {slide.type === "content" && (
         <div className="space-y-2">
           <Label htmlFor="content">Content</Label>
           <Textarea
             id="content"
-            value={(slide as any).content || ''}
+            value={(slide as any).content || ""}
             onChange={(e) => onUpdate({ content: e.target.value } as any)}
             placeholder="Enter slide content"
             className="min-h-32"
@@ -336,7 +423,9 @@ function ContentTab({
       )}
 
       {/* Options for multiple choice, quiz, and image-choice */}
-      {(slide.type === 'multiple-choice' || slide.type === 'quiz' || slide.type === 'image-choice') && (
+      {(slide.type === "multiple-choice" ||
+        slide.type === "quiz" ||
+        slide.type === "image-choice") && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <Label>Options</Label>
@@ -346,7 +435,9 @@ function ContentTab({
             </Button>
           </div>
           <div className="space-y-2">
-            {(slide as MultipleChoiceSlide | QuizSlide | ImageChoiceSlide).options.map((option, index) => (
+            {(
+              slide as MultipleChoiceSlide | QuizSlide | ImageChoiceSlide
+            ).options.map((option, index) => (
               <div
                 key={option.id}
                 className="flex items-center gap-2 rounded-lg border p-2"
@@ -363,7 +454,7 @@ function ContentTab({
                   }
                   className="h-8 flex-1"
                 />
-                {slide.type === 'quiz' && (
+                {slide.type === "quiz" && (
                   <Switch
                     checked={option.isCorrect}
                     onCheckedChange={(checked) =>
@@ -385,7 +476,7 @@ function ContentTab({
       )}
 
       {/* Ranking items */}
-      {slide.type === 'ranking' && (
+      {slide.type === "ranking" && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <Label>Items to Rank</Label>
@@ -400,7 +491,9 @@ function ContentTab({
                 key={item.id}
                 className="flex items-center gap-2 rounded-lg border p-2"
               >
-                <span className="text-xs text-muted-foreground w-4">{index + 1}</span>
+                <span className="text-xs text-muted-foreground w-4">
+                  {index + 1}
+                </span>
                 <Input
                   value={item.text}
                   onChange={(e) =>
@@ -422,7 +515,7 @@ function ContentTab({
       )}
 
       {/* 100-points items */}
-      {slide.type === '100-points' && (
+      {slide.type === "100-points" && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <Label>Items</Label>
@@ -463,14 +556,18 @@ function ContentTab({
             <Input
               type="number"
               value={(slide as PointsSlide).totalPoints}
-              onChange={(e) => onUpdate({ totalPoints: parseInt(e.target.value) || 100 } as any)}
+              onChange={(e) =>
+                onUpdate({
+                  totalPoints: parseInt(e.target.value) || 100,
+                } as any)
+              }
             />
           </div>
         </div>
       )}
 
       {/* Wheel of Names */}
-      {slide.type === 'wheel-of-names' && (
+      {slide.type === "wheel-of-names" && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <Label>Names</Label>
@@ -504,7 +601,7 @@ function ContentTab({
       )}
 
       {/* Quiz specific fields */}
-      {slide.type === 'quiz' && (
+      {slide.type === "quiz" && (
         <>
           <Separator />
           <div className="space-y-4">
@@ -517,7 +614,9 @@ function ContentTab({
               </div>
               <Slider
                 value={[(slide as QuizSlide).timeLimit]}
-                onValueChange={([value]) => onUpdate({ timeLimit: value } as any)}
+                onValueChange={([value]) =>
+                  onUpdate({ timeLimit: value } as any)
+                }
                 min={10}
                 max={120}
                 step={5}
@@ -543,12 +642,12 @@ function ContentTab({
       )}
 
       {/* Open ended specific */}
-      {slide.type === 'open-ended' && (
+      {slide.type === "open-ended" && (
         <div className="space-y-2">
           <Label htmlFor="placeholder">Placeholder Text</Label>
           <Input
             id="placeholder"
-            value={(slide as any).placeholder || ''}
+            value={(slide as any).placeholder || ""}
             onChange={(e) => onUpdate({ placeholder: e.target.value } as any)}
             placeholder="Enter your answer..."
           />
@@ -556,7 +655,7 @@ function ContentTab({
       )}
 
       {/* Word cloud specific */}
-      {slide.type === 'word-cloud' && (
+      {slide.type === "word-cloud" && (
         <div className="space-y-4">
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -577,20 +676,24 @@ function ContentTab({
       )}
 
       {/* Rating specific */}
-      {slide.type === 'rating' && (
+      {slide.type === "rating" && (
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Rating Type</Label>
             <div className="grid grid-cols-2 gap-2">
-              {['stars', 'numbers', 'slider', 'nps', 'emoji'].map((type) => (
+              {["stars", "numbers", "slider", "nps", "emoji"].map((type) => (
                 <Button
                   key={type}
-                  variant={(slide as RatingSlide).ratingType === type ? 'default' : 'outline'}
+                  variant={
+                    (slide as RatingSlide).ratingType === type
+                      ? "default"
+                      : "outline"
+                  }
                   size="sm"
                   onClick={() => onUpdate({ ratingType: type } as any)}
                   className="capitalize"
                 >
-                  {type === 'nps' ? 'NPS' : type}
+                  {type === "nps" ? "NPS" : type}
                 </Button>
               ))}
             </div>
@@ -601,7 +704,9 @@ function ContentTab({
               <Input
                 type="number"
                 value={(slide as RatingSlide).minValue}
-                onChange={(e) => onUpdate({ minValue: parseInt(e.target.value) || 0 } as any)}
+                onChange={(e) =>
+                  onUpdate({ minValue: parseInt(e.target.value) || 0 } as any)
+                }
               />
             </div>
             <div className="space-y-2">
@@ -609,14 +714,16 @@ function ContentTab({
               <Input
                 type="number"
                 value={(slide as RatingSlide).maxValue}
-                onChange={(e) => onUpdate({ maxValue: parseInt(e.target.value) || 5 } as any)}
+                onChange={(e) =>
+                  onUpdate({ maxValue: parseInt(e.target.value) || 5 } as any)
+                }
               />
             </div>
           </div>
           <div className="space-y-2">
             <Label>Min Label</Label>
             <Input
-              value={(slide as RatingSlide).minLabel || ''}
+              value={(slide as RatingSlide).minLabel || ""}
               onChange={(e) => onUpdate({ minLabel: e.target.value } as any)}
               placeholder="e.g., Poor"
             />
@@ -624,7 +731,7 @@ function ContentTab({
           <div className="space-y-2">
             <Label>Max Label</Label>
             <Input
-              value={(slide as RatingSlide).maxLabel || ''}
+              value={(slide as RatingSlide).maxLabel || ""}
               onChange={(e) => onUpdate({ maxLabel: e.target.value } as any)}
               placeholder="e.g., Excellent"
             />
@@ -633,7 +740,7 @@ function ContentTab({
       )}
 
       {/* Scales specific */}
-      {slide.type === 'scales' && (
+      {slide.type === "scales" && (
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Statement</Label>
@@ -647,16 +754,30 @@ function ContentTab({
             <div className="space-y-2">
               <Label>Left Label</Label>
               <Input
-                value={(slide as ScalesSlide).scaleLabels?.left || ''}
-                onChange={(e) => onUpdate({ scaleLabels: { ...(slide as ScalesSlide).scaleLabels, left: e.target.value } } as any)}
+                value={(slide as ScalesSlide).scaleLabels?.left || ""}
+                onChange={(e) =>
+                  onUpdate({
+                    scaleLabels: {
+                      ...(slide as ScalesSlide).scaleLabels,
+                      left: e.target.value,
+                    },
+                  } as any)
+                }
                 placeholder="Strongly Disagree"
               />
             </div>
             <div className="space-y-2">
               <Label>Right Label</Label>
               <Input
-                value={(slide as ScalesSlide).scaleLabels?.right || ''}
-                onChange={(e) => onUpdate({ scaleLabels: { ...(slide as ScalesSlide).scaleLabels, right: e.target.value } } as any)}
+                value={(slide as ScalesSlide).scaleLabels?.right || ""}
+                onChange={(e) =>
+                  onUpdate({
+                    scaleLabels: {
+                      ...(slide as ScalesSlide).scaleLabels,
+                      right: e.target.value,
+                    },
+                  } as any)
+                }
                 placeholder="Strongly Agree"
               />
             </div>
@@ -665,14 +786,18 @@ function ContentTab({
             <Label>Number of Steps</Label>
             <div className="flex gap-2">
               <Button
-                variant={(slide as ScalesSlide).steps === 5 ? 'default' : 'outline'}
+                variant={
+                  (slide as ScalesSlide).steps === 5 ? "default" : "outline"
+                }
                 size="sm"
                 onClick={() => onUpdate({ steps: 5 } as any)}
               >
                 5 Steps
               </Button>
               <Button
-                variant={(slide as ScalesSlide).steps === 7 ? 'default' : 'outline'}
+                variant={
+                  (slide as ScalesSlide).steps === 7 ? "default" : "outline"
+                }
                 size="sm"
                 onClick={() => onUpdate({ steps: 7 } as any)}
               >
@@ -684,15 +809,21 @@ function ContentTab({
       )}
 
       {/* Number input specific */}
-      {slide.type === 'number' && (
+      {slide.type === "number" && (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Min Value</Label>
               <Input
                 type="number"
-                value={(slide as NumberSlide).minValue ?? ''}
-                onChange={(e) => onUpdate({ minValue: e.target.value ? parseInt(e.target.value) : undefined } as any)}
+                value={(slide as NumberSlide).minValue ?? ""}
+                onChange={(e) =>
+                  onUpdate({
+                    minValue: e.target.value
+                      ? parseInt(e.target.value)
+                      : undefined,
+                  } as any)
+                }
                 placeholder="No min"
               />
             </div>
@@ -700,8 +831,14 @@ function ContentTab({
               <Label>Max Value</Label>
               <Input
                 type="number"
-                value={(slide as NumberSlide).maxValue ?? ''}
-                onChange={(e) => onUpdate({ maxValue: e.target.value ? parseInt(e.target.value) : undefined } as any)}
+                value={(slide as NumberSlide).maxValue ?? ""}
+                onChange={(e) =>
+                  onUpdate({
+                    maxValue: e.target.value
+                      ? parseInt(e.target.value)
+                      : undefined,
+                  } as any)
+                }
                 placeholder="No max"
               />
             </div>
@@ -709,7 +846,7 @@ function ContentTab({
           <div className="space-y-2">
             <Label>Unit</Label>
             <Input
-              value={(slide as NumberSlide).unit || ''}
+              value={(slide as NumberSlide).unit || ""}
               onChange={(e) => onUpdate({ unit: e.target.value } as any)}
               placeholder="e.g., km, $, %"
             />
@@ -718,12 +855,12 @@ function ContentTab({
       )}
 
       {/* Pin on Image specific */}
-      {slide.type === 'pin-on-image' && (
+      {slide.type === "pin-on-image" && (
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Image URL</Label>
             <Input
-              value={(slide as any).imageUrl || ''}
+              value={(slide as any).imageUrl || ""}
               onChange={(e) => onUpdate({ imageUrl: e.target.value } as any)}
               placeholder="https://example.com/image.jpg"
             />
@@ -731,7 +868,7 @@ function ContentTab({
           <div className="space-y-2">
             <Label>Question</Label>
             <Textarea
-              value={(slide as any).question || ''}
+              value={(slide as any).question || ""}
               onChange={(e) => onUpdate({ question: e.target.value } as any)}
               placeholder="Where would you place your pin?"
             />
@@ -740,49 +877,53 @@ function ContentTab({
       )}
 
       {/* Q&A specific */}
-      {slide.type === 'qa' && (
+      {slide.type === "qa" && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <Label>Allow Submissions</Label>
-              <p className="text-xs text-muted-foreground">Let participants submit questions</p>
+              <p className="text-xs text-muted-foreground">
+                Let participants submit questions
+              </p>
             </div>
             <Switch
               checked={(slide as QASlide).allowSubmissions ?? true}
-              onCheckedChange={(checked) => onUpdate({ allowSubmissions: checked } as any)}
+              onCheckedChange={(checked) =>
+                onUpdate({ allowSubmissions: checked } as any)
+              }
             />
           </div>
         </div>
       )}
     </div>
-  )
+  );
 }
 
 function DesignTab({
   slide,
   onUpdate,
 }: {
-  slide: Slide
-  onUpdate: (updates: Partial<Slide>) => void
+  slide: Slide;
+  onUpdate: (updates: Partial<Slide>) => void;
 }) {
-  const handleThemeUpdate = (themeUpdates: Partial<Slide['theme']>) => {
+  const handleThemeUpdate = (themeUpdates: Partial<Slide["theme"]>) => {
     onUpdate({
       theme: {
         ...slide.theme,
         ...themeUpdates,
       },
-    })
-  }
+    });
+  };
 
   const handleApplyPresetTheme = (themeKey: string) => {
-    const theme = THEMES[themeKey]
+    const theme = THEMES[themeKey];
     if (theme) {
-      onUpdate({ theme })
+      onUpdate({ theme });
     }
-  }
+  };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-zinc-50 p-10 rounded-2xl">
       <div className="space-y-3">
         <Label>Theme Presets</Label>
         <div className="grid grid-cols-2 gap-2">
@@ -801,8 +942,11 @@ function DesignTab({
                 className="h-1.5 w-6 rounded"
                 style={{ backgroundColor: theme.accentColor }}
               />
-              <span className="text-[10px] mt-1 capitalize" style={{ color: theme.textColor }}>
-                {key.replace('-', ' ')}
+              <span
+                className="text-[10px] mt-1 capitalize"
+                style={{ color: theme.textColor }}
+              >
+                {key.replace("-", " ")}
               </span>
             </button>
           ))}
@@ -875,28 +1019,32 @@ function DesignTab({
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 function SettingsTab({
   slide,
   onUpdate,
 }: {
-  slide: Slide
-  onUpdate: (updates: Partial<Slide>) => void
+  slide: Slide;
+  onUpdate: (updates: Partial<Slide>) => void;
 }) {
-  const handleSettingsUpdate = (settingsUpdates: Partial<Slide['settings']>) => {
+  const handleSettingsUpdate = (
+    settingsUpdates: Partial<Slide["settings"]>,
+  ) => {
     onUpdate({
       settings: {
         ...slide.settings,
         ...settingsUpdates,
       },
-    })
-  }
+    });
+  };
 
   return (
-    <div className="space-y-6">
-      {(slide.type === 'multiple-choice' || slide.type === 'quiz' || slide.type === 'image-choice') && (
+    <div className="space-y-6 bg-zinc-50 p-10 rounded-2xl">
+      {(slide.type === "multiple-choice" ||
+        slide.type === "quiz" ||
+        slide.type === "image-choice") && (
         <>
           <div className="flex items-center justify-between">
             <div>
@@ -912,12 +1060,10 @@ function SettingsTab({
               }
             />
           </div>
-
-          <Separator />
         </>
       )}
 
-      {slide.type === 'multiple-choice' && (
+      {slide.type === "multiple-choice" && (
         <div className="flex items-center justify-between">
           <div>
             <Label>Allow Multiple Answers</Label>
@@ -934,7 +1080,7 @@ function SettingsTab({
         </div>
       )}
 
-      {slide.type === 'quiz' && (
+      {slide.type === "quiz" && (
         <div className="flex items-center justify-between">
           <div>
             <Label>Show Correct Answer</Label>
@@ -951,7 +1097,7 @@ function SettingsTab({
         </div>
       )}
 
-      {(slide.type === 'open-ended' || slide.type === 'qa') && (
+      {(slide.type === "open-ended" || slide.type === "qa") && (
         <div className="flex items-center justify-between">
           <div>
             <Label>Anonymous Responses</Label>
@@ -968,7 +1114,7 @@ function SettingsTab({
         </div>
       )}
 
-      {slide.type === 'qa' && (
+      {slide.type === "qa" && (
         <div className="flex items-center justify-between">
           <div>
             <Label>Allow Upvotes</Label>
@@ -985,7 +1131,7 @@ function SettingsTab({
         </div>
       )}
 
-      {slide.type === 'word-cloud' && (
+      {slide.type === "word-cloud" && (
         <div className="flex items-center justify-between">
           <div>
             <Label>Profanity Filter</Label>
@@ -1002,7 +1148,7 @@ function SettingsTab({
         </div>
       )}
 
-      {slide.type === 'open-ended' && (
+      {slide.type === "open-ended" && (
         <div className="flex items-center justify-between">
           <div>
             <Label>Moderated</Label>
@@ -1019,13 +1165,11 @@ function SettingsTab({
         </div>
       )}
 
-      <Separator />
-
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Label>Max Responses</Label>
           <span className="text-sm text-muted-foreground">
-            {slide.settings.maxResponses || 'Unlimited'}
+            {slide.settings.maxResponses || "Unlimited"}
           </span>
         </div>
         <Slider
@@ -1037,10 +1181,8 @@ function SettingsTab({
           max={100}
           step={5}
         />
-        <p className="text-xs text-muted-foreground">
-          0 = unlimited responses
-        </p>
+        <p className="text-xs text-muted-foreground">0 = unlimited responses</p>
       </div>
     </div>
-  )
+  );
 }
