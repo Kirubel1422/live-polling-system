@@ -7,6 +7,7 @@ import {
   Search,
   Sparkles,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import {
@@ -69,9 +70,11 @@ export default function DashboardHeader({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="z-50">
               <DropdownMenuGroup>
-                <DropdownMenuItem>
-                  <BadgeCheckIcon />
-                  Account
+                <DropdownMenuItem asChild>
+                  <Link to="/account">
+                    <BadgeCheckIcon />
+                    Account
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                   <CreditCardIcon />
