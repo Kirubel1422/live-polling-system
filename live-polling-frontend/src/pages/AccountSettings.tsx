@@ -236,7 +236,7 @@ export default function AccountSettings() {
                   <button
                     type="button"
                     onClick={() => setExpanded(isOpen ? null : section.id)}
-                    className="flex w-full items-center justify-between gap-4 px-4 py-4 text-left hover:bg-muted/50"
+                    className="flex w-full items-center justify-between gap-4 px-4 py-4 text-left transition-colors hover:bg-muted/50"
                   >
                     <div className="flex min-w-0 flex-1 items-center gap-3">
                       {section.icon}
@@ -269,7 +269,9 @@ export default function AccountSettings() {
                     />
                   </button>
                   {isOpen && (
-                    <div className="border-t px-4 py-4">{section.content}</div>
+                    <div className="rounded-b-lg border-t px-4 py-4">
+                      {section.content}
+                    </div>
                   )}
                 </div>
               );
