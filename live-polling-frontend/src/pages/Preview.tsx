@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useState, useEffect } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   ChevronLeft,
   ChevronRight,
@@ -8,73 +8,77 @@ import {
   Monitor,
   Users,
   QrCode,
-} from 'lucide-react'
-import { useAppSelector } from '@/store/hooks'
-import { Button } from '@/components/ui/button'
-import { Progress } from '@/components/ui/progress'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { cn } from '@/lib/utils'
+} from "lucide-react";
+import { useAppSelector } from "@/store/hooks";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 import {
   Slide,
   MultipleChoiceSlide,
   OpenEndedSlide,
   QuizSlide,
   ContentSlide,
-} from '@/types/presentation'
+} from "@/types/presentation";
 
 export default function Preview() {
-  const { presentationId } = useParams<{ presentationId: string }>()
-  const navigate = useNavigate()
+  const { presentationId } = useParams<{ presentationId: string }>();
+  const navigate = useNavigate();
 
   const presentation = useAppSelector((state) =>
-    state.presentations.items.find((p) => p.id === presentationId)
-  )
+    state.presentations.items.find((p) => p.id === presentationId),
+  );
 
-  const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
-  const [showPhoneMockup, setShowPhoneMockup] = useState(true)
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+  const [showPhoneMockup, setShowPhoneMockup] = useState(true);
 
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowRight' || e.key === ' ') {
-        e.preventDefault()
-        goToNextSlide()
-      } else if (e.key === 'ArrowLeft') {
-        e.preventDefault()
-        goToPrevSlide()
-      } else if (e.key === 'Escape') {
-        navigate(`/editor/${presentationId}`)
+      if (e.key === "ArrowRight" || e.key === " ") {
+        e.preventDefault();
+        goToNextSlide();
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        goToPrevSlide();
+      } else if (e.key === "Escape") {
+        navigate(`/editor/${presentationId}`);
       }
-    }
+    };
 
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [currentSlideIndex, presentation])
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [currentSlideIndex, presentation]);
 
   if (!presentation) {
     return (
       <div className="flex h-screen items-center justify-center">
         <p className="text-muted-foreground">Presentation not found</p>
       </div>
-    )
+    );
   }
 
-  const currentSlide = presentation.slides[currentSlideIndex]
-  const progress = ((currentSlideIndex + 1) / presentation.slides.length) * 100
+  const currentSlide = presentation.slides[currentSlideIndex];
+  const progress = ((currentSlideIndex + 1) / presentation.slides.length) * 100;
 
   const goToNextSlide = () => {
     if (currentSlideIndex < presentation.slides.length - 1) {
-      setCurrentSlideIndex(currentSlideIndex + 1)
+      setCurrentSlideIndex(currentSlideIndex + 1);
     }
-  }
+  };
 
   const goToPrevSlide = () => {
     if (currentSlideIndex > 0) {
-      setCurrentSlideIndex(currentSlideIndex - 1)
+      setCurrentSlideIndex(currentSlideIndex - 1);
     }
-  }
+  };
 
   return (
     <div className="flex h-screen flex-col bg-[#1a1a2e]">
@@ -102,8 +106,7 @@ export default function Preview() {
 
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className="bg-white/10 text-white/70">
-            <Users className="mr-1 size-3" />
-            0 participants
+            <Users className="mr-1 size-3" />0 participants
           </Badge>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -124,8 +127,8 @@ export default function Preview() {
               size="icon-sm"
               onClick={() => setShowPhoneMockup(false)}
               className={cn(
-                'text-white/70 hover:text-white hover:bg-transparent',
-                !showPhoneMockup && 'bg-white/20 text-white'
+                "text-white/70 hover:text-white hover:bg-transparent",
+                !showPhoneMockup && "bg-white/20 text-white",
               )}
             >
               <Monitor className="size-4" />
@@ -135,8 +138,8 @@ export default function Preview() {
               size="icon-sm"
               onClick={() => setShowPhoneMockup(true)}
               className={cn(
-                'text-white/70 hover:text-white hover:bg-transparent',
-                showPhoneMockup && 'bg-white/20 text-white'
+                "text-white/70 hover:text-white hover:bg-transparent",
+                showPhoneMockup && "bg-white/20 text-white",
               )}
             >
               <Smartphone className="size-4" />
@@ -152,8 +155,10 @@ export default function Preview() {
           {/* Main Slide */}
           <div className="flex flex-1 items-center justify-center">
             <div
-              className="aspect-video w-full max-w-5xl rounded-xl shadow-2xl overflow-hidden"
-              style={{ backgroundColor: currentSlide?.theme.backgroundColor || '#fff' }}
+              className="h-full w-full rounded-xl shadow-2xl overflow-hidden"
+              style={{
+                backgroundColor: currentSlide?.theme.backgroundColor || "#fff",
+              }}
             >
               {currentSlide && <SlideRenderer slide={currentSlide} />}
             </div>
@@ -204,9 +209,7 @@ export default function Preview() {
                   </div>
                   {/* Screen Content */}
                   <div className="h-[500px] w-[240px] overflow-hidden">
-                    {currentSlide && (
-                      <PhoneSlideView slide={currentSlide} />
-                    )}
+                    {currentSlide && <PhoneSlideView slide={currentSlide} />}
                   </div>
                 </div>
               </div>
@@ -218,21 +221,21 @@ export default function Preview() {
         )}
       </div>
     </div>
-  )
+  );
 }
 
 function SlideRenderer({ slide }: { slide: Slide }) {
   switch (slide.type) {
-    case 'multiple-choice':
-      return <MultipleChoicePresenter slide={slide as MultipleChoiceSlide} />
-    case 'open-ended':
-      return <OpenEndedPresenter slide={slide as OpenEndedSlide} />
-    case 'quiz':
-      return <QuizPresenter slide={slide as QuizSlide} />
-    case 'content':
-      return <ContentPresenter slide={slide as ContentSlide} />
+    case "multiple-choice":
+      return <MultipleChoicePresenter slide={slide as MultipleChoiceSlide} />;
+    case "open-ended":
+      return <OpenEndedPresenter slide={slide as OpenEndedSlide} />;
+    case "quiz":
+      return <QuizPresenter slide={slide as QuizSlide} />;
+    case "content":
+      return <ContentPresenter slide={slide as ContentSlide} />;
     default:
-      return <DefaultPresenter slide={slide} />
+      return <DefaultPresenter slide={slide} />;
   }
 }
 
@@ -270,7 +273,7 @@ function MultipleChoicePresenter({ slide }: { slide: MultipleChoiceSlide }) {
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 function OpenEndedPresenter({ slide }: { slide: OpenEndedSlide }) {
@@ -292,14 +295,14 @@ function OpenEndedPresenter({ slide }: { slide: OpenEndedSlide }) {
       )}
       <div
         className="w-full max-w-2xl rounded-2xl border-2 border-dashed p-12"
-        style={{ borderColor: slide.theme.accentColor + '60' }}
+        style={{ borderColor: slide.theme.accentColor + "60" }}
       >
         <p className="text-lg text-muted-foreground">
           Waiting for responses...
         </p>
       </div>
     </div>
-  )
+  );
 }
 
 function QuizPresenter({ slide }: { slide: QuizSlide }) {
@@ -310,7 +313,7 @@ function QuizPresenter({ slide }: { slide: QuizSlide }) {
           className="text-base px-4 py-1"
           style={{
             backgroundColor: slide.theme.accentColor,
-            color: '#fff',
+            color: "#fff",
           }}
         >
           {slide.points} points
@@ -349,7 +352,7 @@ function QuizPresenter({ slide }: { slide: QuizSlide }) {
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 function ContentPresenter({ slide }: { slide: ContentSlide }) {
@@ -378,7 +381,7 @@ function ContentPresenter({ slide }: { slide: ContentSlide }) {
         </p>
       )}
     </div>
-  )
+  );
 }
 
 function DefaultPresenter({ slide }: { slide: Slide }) {
@@ -399,15 +402,15 @@ function DefaultPresenter({ slide }: { slide: Slide }) {
         </p>
       )}
     </div>
-  )
+  );
 }
 
 function PhoneSlideView({ slide }: { slide: Slide }) {
   const renderPhoneContent = () => {
     switch (slide.type) {
-      case 'multiple-choice':
-      case 'quiz':
-        const optionSlide = slide as MultipleChoiceSlide | QuizSlide
+      case "multiple-choice":
+      case "quiz":
+        const optionSlide = slide as MultipleChoiceSlide | QuizSlide;
         return (
           <div className="flex h-full flex-col p-4">
             <h3 className="mb-4 text-center text-sm font-semibold">
@@ -431,9 +434,9 @@ function PhoneSlideView({ slide }: { slide: Slide }) {
               Submit
             </Button>
           </div>
-        )
+        );
 
-      case 'open-ended':
+      case "open-ended":
         return (
           <div className="flex h-full flex-col p-4">
             <h3 className="mb-4 text-center text-sm font-semibold">
@@ -449,7 +452,7 @@ function PhoneSlideView({ slide }: { slide: Slide }) {
               Submit
             </Button>
           </div>
-        )
+        );
 
       default:
         return (
@@ -461,9 +464,9 @@ function PhoneSlideView({ slide }: { slide: Slide }) {
               </p>
             )}
           </div>
-        )
+        );
     }
-  }
+  };
 
   return (
     <div
@@ -472,5 +475,5 @@ function PhoneSlideView({ slide }: { slide: Slide }) {
     >
       {renderPhoneContent()}
     </div>
-  )
+  );
 }
