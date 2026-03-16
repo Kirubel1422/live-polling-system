@@ -10,7 +10,7 @@ import { store } from "@/store";
 import DashboardHeader from "@/components/dashboard/header";
 import TemplatesList from "@/components/dashboard/templates";
 import { TEMPLATES } from "@/data/mock";
-import AIGenerationModal from "@/components/AIGenerationModal";
+import AIGenerationModal from "@/components/ai-generation-modal/AIGenerationModal";
 import RecentPresentations from "@/components/dashboard/recent-presentation";
 
 export default function Dashboard() {
@@ -65,9 +65,6 @@ export default function Dashboard() {
       <DashboardHeader
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
-        dispatch={dispatch}
-        openAIModal={() => dispatch(openAIModal())}
-        handleCreateNew={handleCreateNew}
       />
 
       <main className="mx-auto max-w-7xl px-4 py-8">

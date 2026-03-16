@@ -23,9 +23,23 @@ export default function TemplatesList({
             onClick={() => handleCreateFromTemplate(template.id)}
           >
             <div
-              className="aspect-[4/3] w-full"
+              className="aspect-[4/3] w-full relative flex flex-col items-center justify-center p-6 overflow-hidden"
               style={{ background: template.thumbnail }}
-            />
+            >
+              {/* Decorative background blur */}
+              <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]" />
+              
+              {/* Main Emoji Graphic */}
+              <div className="relative z-10 text-6xl drop-shadow-xl transition-transform duration-500 ease-out group-hover:scale-125 group-hover:-rotate-6">
+                {template.id === "quiz" && "😂"}
+                {template.id === "feedback" && "📝"}
+                {template.id === "brainstorm" && "💡"}
+                {template.id === "poll" && "🗳️"}
+                {template.id === "icebreaker" && "🧊"}
+                {/* Fallback for unknown templates */}
+                {(!["quiz", "feedback", "brainstorm", "poll", "icebreaker"].includes(template.id)) && "✨"}
+              </div>
+            </div>
             <CardContent className="p-3 border-none">
               <p className="font-medium text-sm">{template.title}</p>
               <p className="text-xs text-muted-foreground line-clamp-1">

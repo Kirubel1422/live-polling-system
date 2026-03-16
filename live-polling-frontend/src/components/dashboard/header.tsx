@@ -3,37 +3,33 @@ import {
   BellIcon,
   CreditCardIcon,
   LogOutIcon,
-  Plus,
+  Moon,
   Search,
-  Sparkles,
-} from "lucide-react";
-import { Link } from "react-router-dom";
-import { Input } from "../ui/input";
-import { Button } from "../ui/button";
+  Sun,
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Input } from '../ui/input';
+import { Button } from '../ui/button';
 import {
   DropdownMenu,
   DropdownMenuSeparator,
-  DropdownMenuLabel,
   DropdownMenuGroup,
   DropdownMenuContent,
   DropdownMenuTrigger,
   DropdownMenuItem,
-} from "../ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+} from '../ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { useTheme } from '@/lib/useTheme';
 
 export default function DashboardHeader({
   searchQuery,
   setSearchQuery,
-  dispatch,
-  openAIModal,
-  handleCreateNew,
 }: {
   searchQuery: string;
   setSearchQuery: (value: string) => void;
-  dispatch: (action: any) => void;
-  openAIModal: () => void;
-  handleCreateNew: () => void;
 }) {
+  const { theme, toggleTheme } = useTheme();
+
   return (
     <header className="bg-background/95 mt-4 backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4">
@@ -60,15 +56,12 @@ export default function DashboardHeader({
             <DropdownMenuTrigger>
               <Button variant="ghost" size="icon" className="rounded-full">
                 <Avatar>
-                  <AvatarImage
-                    src="https://github.com/shadcn.png"
-                    alt="shadcn"
-                  />
+                  <AvatarImage src="https://github.com/shadcn.png" alt="shadcn" />
                   <AvatarFallback>LR</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="z-50">
+            <DropdownMenuContent align="end" className="z-50 w-48">
               <DropdownMenuGroup>
                 <DropdownMenuItem asChild>
                   <Link to="/account">
@@ -83,6 +76,10 @@ export default function DashboardHeader({
                 <DropdownMenuItem>
                   <BellIcon />
                   Notifications
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={toggleTheme}>
+                  {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
+                  {theme === 'dark' ? 'Light mode' : 'Dark mode'}
                 </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />

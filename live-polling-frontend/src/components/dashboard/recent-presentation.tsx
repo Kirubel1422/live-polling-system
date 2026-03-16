@@ -87,7 +87,7 @@ export default function RecentPresentations({
         </div>
       </div>
 
-      {filteredPresentations.length === 0 ? (
+      {totalPresentations === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-16">
           <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-muted">
             <Plus className="size-8 text-muted-foreground" />
@@ -102,12 +102,15 @@ export default function RecentPresentations({
           </Button>
         </div>
       ) : (
-        <ScrollArea className="h-[400px] mb-4 pb-4">
+        <ScrollArea className={cn(
+          "h-[520px] mb-4 pb-4",
+          viewMode === "list" && "bg-primary/10 p-4 rounded-xl"
+        )}>
           <div
             className={
               viewMode === "grid"
                 ? "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-                : "flex flex-col gap-4 bg-primary/10 p-7 rounded-2xl"
+                : "flex flex-col gap-3"
             }
           >
             {filteredPresentations
@@ -119,117 +122,150 @@ export default function RecentPresentations({
               .map((presentation) => (
                 <Card
                   key={presentation.id}
-                  className={`group cursor-pointer rounded-none overflow-hidden py-0 transition-all border-none shadow-none ${
-                    viewMode === "list" && "flex border rounded-2xl"
-                  }`}
+                  className={cn(
+                    "group cursor-pointer overflow-hidden transition-all duration-300",
+                    viewMode === "grid"
+                      ? "rounded-none py-0 border-none shadow-none"
+                      : "flex items-start border border-border/50 bg-card rounded-xl"
+                  )}
                   onClick={() => handleOpenPresentation(presentation.id)}
                 >
                   <div
-                    className={
+                    className={cn(
+                      "flex items-center justify-center overflow-hidden border",
                       viewMode === "grid"
-                        ? "flex h-36 w-full items-center justify-center overflow-hidden rounded-2xl border"
-                        : "hidden"
-                    }
+                        ? "h-36 w-full rounded-2xl"
+                        : "hidden" // Completely hide thumbnail in list view
+                    )}
                     style={
                       Array.isArray(presentation.slides) &&
-                      presentation.slides.length > 0
+                        presentation.slides.length > 0
                         ? {
-                            backgroundColor:
-                              presentation.slides[0].theme.backgroundColor,
-                          }
+                          backgroundColor:
+                            presentation.slides[0].theme.backgroundColor,
+                        }
                         : undefined
                     }
                   >
-                    <div className="flex h-full w-full items-center justify-center p-2 *:min-h-0">
+                    <div className={cn(
+                      "flex h-full w-full items-center justify-center *:min-h-0",
+                      viewMode === "grid" ? "p-2" : "hidden"
+                    )}>
                       {renderSlideContent(presentation.slides[0], "card")}
                     </div>
                   </div>
 
                   <CardContent
-                    className={`${viewMode === "list" ? "flex-1 p-6" : "px-4 pb-3"} relative`}
+                    className={cn(
+                      "relative w-full",
+                      viewMode === "list" ? "flex flex-1 items-center justify-between p-4 sm:p-5" : "px-2 pb-4"
+                    )}
                   >
-                    <div className="mb-2 flex items-start justify-between">
+                    <div className={cn("mb-2 flex w-full items-start justify-between", viewMode === "list" && "mb-0 gap-4")}>
+                      {viewMode === "list" && (
+                        <div className="flex h-10 w-10 mt-0.5 shrink-0 items-center justify-center rounded-lg bg-muted/50 text-muted-foreground border">
+                          <LayoutGrid className="size-5" />
+                        </div>
+                      )}
+
                       <div
                         className={cn(
-                          "flex-1 space-y-1 min-w-0",
-                          viewMode == "list" && "space-y-3",
+                          "flex-1 space-y-1 min-w-0 text-left",
+                          viewMode === "list" && "space-y-1"
                         )}
                       >
                         <h3
                           className={cn(
-                            "truncate text-sm",
-                            viewMode == "grid" && "font-medium",
+                            "truncate",
+                            viewMode === "grid" ? "text-sm font-medium" : "text-base font-medium transition-colors"
                           )}
                         >
                           {presentation.title}{" "}
                           {presentation.isAIGenerated && (
                             <Badge className="ml-2 bg-blue-500/80">
-                              <SparkleIcon />
+                              <SparkleIcon className={cn("size-3", viewMode === "list" && "mr-1")} />
                               AI Generated
                             </Badge>
                           )}
                         </h3>
-                        <p className="text-xs text-muted-foreground">
+                        <p className={cn("text-muted-foreground", viewMode === "grid" ? "text-xs" : "text-sm")}>
                           {presentation.slides.length} slide
                           {presentation.slides.length !== 1 ? "s" : ""} •{" "}
                           {format(
                             new Date(presentation.updatedAt),
-                            "MMM d, yyyy",
+                            "MMM d, yyyy"
                           )}
                         </p>
                       </div>
 
-                      <DropdownMenu>
-                        <DropdownMenuTrigger
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            className="opacity-0 group-hover:opacity-100"
+                      <div className={cn(viewMode === "list" ? "flex items-center gap-4 pl-4 ml-auto" : "")}>
+                        {viewMode === "list" && (
+                          <Badge
+                            variant="secondary"
+                            className={cn(getStatusColor(presentation.status), "shadow-sm")}
                           >
-                            <MoreHorizontal className="size-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleOpenPresentation(presentation.id);
-                            }}
+                            {presentation.status}
+                          </Badge>
+                        )}
+
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            onClick={(e) => e.stopPropagation()}
                           >
-                            <Pencil className="size-4" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDuplicatePresentation(presentation.id);
-                            }}
-                          >
-                            <Copy className="size-4" />
-                            Duplicate
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            variant="destructive"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeletePresentation(presentation.id);
-                            }}
-                          >
-                            <Trash2 className="size-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              className={cn(
+                                "opacity-0 group-hover:opacity-100 transition-all text-muted-foreground hover:text-foreground",
+                                viewMode === "list" && "bg-transparent hover:bg-muted"
+                              )}
+                            >
+                              <MoreHorizontal className="size-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenPresentation(presentation.id);
+                              }}
+                            >
+                              <Pencil className="size-4" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDuplicatePresentation(presentation.id);
+                              }}
+                            >
+                              <Copy className="size-4" />
+                              Duplicate
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeletePresentation(presentation.id);
+                              }}
+                            >
+                              <Trash2 className="size-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </div>
-                    <Badge
-                      variant="secondary"
-                      className={getStatusColor(presentation.status)}
-                    >
-                      {presentation.status}
-                    </Badge>
+
+                    {viewMode === "grid" && (
+                      <Badge
+                        variant="secondary"
+                        className={getStatusColor(presentation.status)}
+                      >
+                        {presentation.status}
+                      </Badge>
+                    )}
                   </CardContent>
                 </Card>
               ))}
