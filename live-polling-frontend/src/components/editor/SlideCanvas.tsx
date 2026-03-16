@@ -2,26 +2,19 @@ import {
   Slide,
   MultipleChoiceSlide,
   OpenEndedSlide,
-  // QuizSlide,
   ContentSlide,
   WordCloudSlide,
   RatingSlide,
   RankingSlide,
   ScalesSlide,
-  // PinOnImageSlide,
   QASlide,
-  // ImageChoiceSlide,
-  // NumberSlide,
   PointsSlide,
   WheelSlide,
 } from "@/types/presentation";
 import { cn } from "@/lib/utils";
-import { Star, ThumbsUp, Image as ImageIcon } from "lucide-react";
-
-interface SlideCanvasProps {
-  slide: Slide | undefined;
-  presentationId: string;
-}
+import { Star, ThumbsUp } from "lucide-react";
+import { SlideCanvasProps, ThumbnailSize } from "./types";
+import { WORD_CLOUD_SAMPLE_WORDS, QA_SAMPLE_QUESTIONS, WHEEL_COLORS } from "./data.const";
 
 export default function SlideCanvas({ slide }: SlideCanvasProps) {
   if (!slide) {
@@ -45,8 +38,6 @@ export default function SlideCanvas({ slide }: SlideCanvasProps) {
     </div>
   );
 }
-
-export type ThumbnailSize = false | "list" | "card";
 
 export function renderSlideContent(slide: Slide, thumbnailSize: ThumbnailSize) {
   switch (slide.type) {
@@ -267,108 +258,6 @@ function OpenEndedContent({
   );
 }
 
-// function QuizContent({
-//   slide,
-//   isThumbnail,
-// }: {
-//   isThumbnail?: boolean;
-//   slide: QuizSlide;
-// }) {
-//   if (isThumbnail) {
-//     return (
-//       <div className="flex h-full w-full flex-col items-center justify-center gap-0.5 text-center">
-//         <div className="flex items-center gap-1">
-//           <span
-//             className="rounded px-1.5 py-0.5 text-[8px] font-medium text-white"
-//             style={{ backgroundColor: slide.theme.accentColor }}
-//           >
-//             {slide.points} pts
-//           </span>
-//           <span
-//             className="rounded px-1.5 py-0.5 text-[8px] font-medium"
-//             style={{
-//               backgroundColor: slide.theme.accentColor + "30",
-//               color: slide.theme.accentColor,
-//             }}
-//           >
-//             {slide.timeLimit}s
-//           </span>
-//         </div>
-//         <h2
-//           className="line-clamp-2 max-w-full text-[10px] font-semibold leading-tight"
-//           style={{ color: slide.theme.textColor }}
-//         >
-//           {slide.title || "Quiz"}
-//         </h2>
-//         <div className="mt-0.5 flex flex-wrap items-center justify-center gap-1">
-//           {slide.options.slice(0, 4).map((option, index) => (
-//             <span
-//               key={option.id}
-//               className={cn(
-//                 "rounded px-1.5 py-0.5 text-[8px] font-medium text-white",
-//                 option.isCorrect && "ring-1 ring-white",
-//               )}
-//               style={{
-//                 backgroundColor: option.color || slide.theme.accentColor,
-//               }}
-//             >
-//               {String.fromCharCode(65 + index)}
-//             </span>
-//           ))}
-//         </div>
-//       </div>
-//     );
-//   }
-//   return (
-//     <div className="flex h-full w-full flex-col">
-//       <div className="mb-4 flex items-center justify-between">
-//         <span
-//           className="rounded-full px-3 py-1 text-sm font-medium"
-//           style={{
-//             backgroundColor: slide.theme.accentColor,
-//             color: "#fff",
-//           }}
-//         >
-//           {slide.points} points
-//         </span>
-//         <span
-//           className="rounded-full px-3 py-1 text-sm font-medium"
-//           style={{
-//             backgroundColor: slide.theme.accentColor + "20",
-//             color: slide.theme.accentColor,
-//           }}
-//         >
-//           {slide.timeLimit}s
-//         </span>
-//       </div>
-//       <div className="mb-6 text-center">
-//         <h2
-//           className="text-3xl font-bold"
-//           style={{ color: slide.theme.textColor }}
-//         >
-//           {slide.title || "Quiz question here"}
-//         </h2>
-//       </div>
-//       <div className="grid flex-1 grid-cols-2 gap-3">
-//         {slide.options.map((option, index) => (
-//           <button
-//             key={option.id}
-//             className={cn(
-//               "flex items-center justify-center rounded-xl p-4 text-base font-medium text-white transition-transform hover:scale-[1.02]",
-//               option.isCorrect && "ring-2 ring-white ring-offset-2",
-//             )}
-//             style={{ backgroundColor: option.color || slide.theme.accentColor }}
-//           >
-//             <span className="mr-2 flex size-6 items-center justify-center rounded-full bg-white/20 text-xs">
-//               {String.fromCharCode(65 + index)}
-//             </span>
-//             {option.text}
-//           </button>
-//         ))}
-//       </div>
-//     </div>
-//   );
-// }
 
 function ContentContent({
   slide,
@@ -458,14 +347,7 @@ function WordCloudContent({
 }) {
   const isThumbnail = thumbnailSize !== false;
   const isCard = thumbnailSize === "card";
-  const sampleWords = [
-    "Innovation",
-    "Teamwork",
-    "Growth",
-    "Success",
-    "Ideas",
-    "Creativity",
-  ];
+  const sampleWords = WORD_CLOUD_SAMPLE_WORDS;
 
   if (isThumbnail) {
     return (
@@ -1000,88 +882,7 @@ function ScalesContent({
   );
 }
 
-// function PinOnImageContent({
-//   slide,
-//   isThumbnail,
-// }: {
-//   isThumbnail?: boolean;
-//   slide: PinOnImageSlide;
-// }) {
-//   if (isThumbnail) {
-//     return (
-//       <div className="flex h-full w-full flex-col items-center justify-center gap-0.5 text-center">
-//         <h2
-//           className="line-clamp-1 max-w-full text-[10px] font-semibold leading-tight"
-//           style={{ color: slide.theme.textColor }}
-//         >
-//           {slide.title || "Pin on image"}
-//         </h2>
-//         <div
-//           className="mt-1 flex aspect-video w-full max-w-[85%] items-center justify-center rounded border border-dashed overflow-hidden"
-//           style={{
-//             borderColor: slide.theme.accentColor + "50",
-//             backgroundColor: slide.theme.textColor + "08",
-//           }}
-//         >
-//           {slide.imageUrl ? (
-//             <img
-//               src={slide.imageUrl}
-//               alt=""
-//               className="h-full w-full object-cover"
-//             />
-//           ) : (
-//             <Upload
-//               className="size-4 opacity-50"
-//               style={{ color: slide.theme.textColor }}
-//             />
-//           )}
-//         </div>
-//         <p
-//           className="line-clamp-1 max-w-full text-[8px] opacity-70"
-//           style={{ color: slide.theme.textColor }}
-//         >
-//           {slide.question || "Place your pin"}
-//         </p>
-//       </div>
-//     );
-//   }
-//   return (
-//     <div className="flex h-full w-full flex-col items-center justify-center">
-//       <h2
-//         className="text-3xl font-bold mb-4 text-center"
-//         style={{ color: slide.theme.textColor }}
-//       >
-//         {slide.title}
-//       </h2>
-//       <div
-//         className="relative w-full max-w-2xl aspect-video rounded-xl overflow-hidden border-2 border-dashed flex items-center justify-center"
-//         style={{
-//           borderColor: slide.theme.accentColor + "40",
-//           backgroundColor: slide.theme.textColor + "05",
-//         }}
-//       >
-//         {slide.imageUrl ? (
-//           <img
-//             src={slide.imageUrl}
-//             alt="Pin target"
-//             className="w-full h-full object-cover"
-//           />
-//         ) : (
-//           <div className="flex flex-col items-center gap-2 text-muted-foreground">
-//             <Upload className="size-8" />
-//             <span>Upload an image</span>
-//           </div>
-//         )}
-//       </div>
-//       <p
-//         className="mt-4 text-sm"
-//         style={{ color: slide.theme.textColor + "70" }}
-//       >
-//         {slide.question || "Click on the image to place your pin"}
-//       </p>
-//     </div>
-//   );
-// }
+
 
 function QAContent({
   slide,
@@ -1092,11 +893,7 @@ function QAContent({
 }) {
   const isThumbnail = thumbnailSize !== false;
   const isCard = thumbnailSize === "card";
-  const sampleQuestions = [
-    { text: "How will this affect our roadmap?", upvotes: 12 },
-    { text: "When can we expect the next release?", upvotes: 8 },
-    { text: "What are the key metrics for success?", upvotes: 5 },
-  ];
+  const sampleQuestions = QA_SAMPLE_QUESTIONS;
 
   if (isThumbnail) {
     return (
@@ -1174,196 +971,6 @@ function QAContent({
     </div>
   );
 }
-
-// function ImageChoiceContent({
-//   slide,
-//   isThumbnail,
-// }: {
-//   isThumbnail?: boolean;
-//   slide: ImageChoiceSlide;
-// }) {
-//   if (isThumbnail) {
-//     return (
-//       <div className="flex h-full w-full flex-col items-center justify-center gap-0.5 text-center">
-//         <h2
-//           className="line-clamp-1 max-w-full text-[10px] font-semibold leading-tight"
-//           style={{ color: slide.theme.textColor }}
-//         >
-//           {slide.title || "Image choice"}
-//         </h2>
-//         {slide.subtitle && (
-//           <p
-//             className="line-clamp-1 max-w-full text-[8px] opacity-80"
-//             style={{ color: slide.theme.textColor }}
-//           >
-//             {slide.subtitle}
-//           </p>
-//         )}
-//         <div className="mt-1 grid grid-cols-2 gap-0.5 w-full max-w-[90%]">
-//           {slide.options.slice(0, 4).map((option) => (
-//             <div
-//               key={option.id}
-//               className="aspect-video rounded overflow-hidden border flex items-center justify-center"
-//               style={{
-//                 borderColor: (option.color || slide.theme.accentColor) + "50",
-//                 backgroundColor: slide.theme.textColor + "08",
-//               }}
-//             >
-//               {option.imageUrl ? (
-//                 <img
-//                   src={option.imageUrl}
-//                   alt=""
-//                   className="h-full w-full object-cover"
-//                 />
-//               ) : (
-//                 <ImageIcon
-//                   className="size-3 opacity-50"
-//                   style={{ color: slide.theme.textColor }}
-//                 />
-//               )}
-//             </div>
-//           ))}
-//         </div>
-//       </div>
-//     );
-//   }
-//   return (
-//     <div className="flex h-full w-full flex-col items-center justify-center">
-//       <h2
-//         className="text-3xl font-bold mb-4 text-center"
-//         style={{ color: slide.theme.textColor }}
-//       >
-//         {slide.title}
-//       </h2>
-//       {slide.subtitle && (
-//         <p
-//           className="text-lg mb-8 opacity-70"
-//           style={{ color: slide.theme.textColor }}
-//         >
-//           {slide.subtitle}
-//         </p>
-//       )}
-//       <div className="grid grid-cols-2 gap-4 w-full max-w-2xl">
-//         {slide.options.map((option) => (
-//           <div
-//             key={option.id}
-//             className="aspect-video rounded-xl overflow-hidden border-2 transition-all hover:scale-[1.02] cursor-pointer flex items-center justify-center"
-//             style={{
-//               borderColor: option.color || slide.theme.accentColor,
-//               backgroundColor: slide.theme.textColor + "05",
-//             }}
-//           >
-//             {option.imageUrl ? (
-//               <img
-//                 src={option.imageUrl}
-//                 alt={option.text}
-//                 className="w-full h-full object-cover"
-//               />
-//             ) : (
-//               <div className="flex flex-col items-center gap-2 text-muted-foreground">
-//                 <ImageIcon className="size-8" />
-//                 <span className="text-sm">{option.text}</span>
-//               </div>
-//             )}
-//           </div>
-//         ))}
-//       </div>
-//     </div>
-//   );
-// }
-
-// function NumberContent({
-//   slide,
-//   isThumbnail,
-// }: {
-//   isThumbnail?: boolean;
-//   slide: NumberSlide;
-// }) {
-//   if (isThumbnail) {
-//     return (
-//       <div className="flex h-full w-full flex-col items-center justify-center gap-0.5 text-center">
-//         <h2
-//           className="line-clamp-1 max-w-full text-[10px] font-semibold leading-tight"
-//           style={{ color: slide.theme.textColor }}
-//         >
-//           {slide.title || "Number"}
-//         </h2>
-//         {slide.subtitle && (
-//           <p
-//             className="line-clamp-1 max-w-full text-[8px] opacity-80"
-//             style={{ color: slide.theme.textColor }}
-//           >
-//             {slide.subtitle}
-//           </p>
-//         )}
-//         <div className="mt-0.5 flex items-center gap-1">
-//           <div
-//             className="flex h-5 w-8 items-center justify-center rounded border text-[10px] font-bold"
-//             style={{
-//               borderColor: slide.theme.accentColor,
-//               color: slide.theme.textColor,
-//               backgroundColor: "transparent",
-//             }}
-//           >
-//             0
-//           </div>
-//           {slide.unit && (
-//             <span
-//               className="text-[8px] font-medium"
-//               style={{ color: slide.theme.textColor }}
-//             >
-//               {slide.unit}
-//             </span>
-//           )}
-//         </div>
-//       </div>
-//     );
-//   }
-
-//   return (
-//     <div
-//       className={cn("flex h-full w-full flex-col items-center justify-center")}
-//     >
-//       <h2
-//         className="text-3xl font-bold mb-4 text-center"
-//         style={{ color: slide.theme.textColor }}
-//       >
-//         {slide.title}
-//       </h2>
-//       {slide.subtitle && (
-//         <p
-//           className={cn("text-lg mb-8 opacity-70")}
-//           style={{ color: slide.theme.textColor }}
-//         >
-//           {slide.subtitle}
-//         </p>
-//       )}
-//       <div className="flex items-center gap-4">
-//         <input
-//           type="number"
-//           placeholder="0"
-//           className="w-32 text-center text-4xl font-bold rounded-xl p-4 border-2"
-//           style={{
-//             borderColor: slide.theme.accentColor,
-//             color: slide.theme.textColor,
-//             backgroundColor: "transparent",
-//           }}
-//           readOnly
-//         />
-//         {slide.unit && (
-//           <span className="text-2xl" style={{ color: slide.theme.textColor }}>
-//             {slide.unit}
-//           </span>
-//         )}
-//       </div>
-//       <p className="mt-4 text-sm text-muted-foreground">
-//         {slide.minValue !== undefined && slide.maxValue !== undefined
-//           ? `Range: ${slide.minValue} - ${slide.maxValue}`
-//           : "Enter any number"}
-//       </p>
-//     </div>
-//   );
-// }
 
 function PointsContent({
   slide,
@@ -1514,16 +1121,7 @@ function WheelContent({
 }) {
   const isThumbnail = thumbnailSize !== false;
   const isCard = thumbnailSize === "card";
-  const colors = [
-    "#6366f1",
-    "#8b5cf6",
-    "#a855f7",
-    "#d946ef",
-    "#ec4899",
-    "#f43f5e",
-    "#f97316",
-    "#eab308",
-  ];
+  const colors = WHEEL_COLORS;
   const segmentAngle = 360 / slide.names.length;
 
   if (isThumbnail) {

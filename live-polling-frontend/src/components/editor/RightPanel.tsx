@@ -11,10 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import {
-  FileText,
-  Palette,
   Plus,
-  Settings,
   Trash2,
   GripVertical,
 } from "lucide-react";
@@ -35,11 +32,10 @@ import {
   THEMES,
 } from "@/types/presentation";
 import { nanoid } from "nanoid";
+import { RightPanelProps, ContentTabProps, DesignTabProps, SettingsTabProps } from "./types";
+import { RIGHT_PANEL_TABS, OPTION_COLORS } from "./data.const";
 
-interface RightPanelProps {
-  slide: Slide;
-  presentationId: string;
-}
+
 
 export default function RightPanel({ slide, presentationId }: RightPanelProps) {
   const dispatch = useAppDispatch();
@@ -55,15 +51,7 @@ export default function RightPanel({ slide, presentationId }: RightPanelProps) {
     );
   };
 
-  const tabs: {
-    id: "content" | "design" | "settings";
-    label: string;
-    icon: typeof FileText;
-  }[] = [
-    { id: "content", label: "Edit", icon: FileText },
-    { id: "design", label: "Design", icon: Palette },
-    { id: "settings", label: "Settings", icon: Settings },
-  ];
+  const tabs = RIGHT_PANEL_TABS;
 
   return (
     <div className="flex h-full mr-2 max-w-120">
@@ -120,11 +108,7 @@ function ContentTab({
   slide,
   onUpdate,
   presentationId,
-}: {
-  slide: Slide;
-  onUpdate: (updates: Partial<Slide>) => void;
-  presentationId: string;
-}) {
+}: ContentTabProps) {
   const dispatch = useAppDispatch();
 
   const handleAddOption = () => {
@@ -137,14 +121,7 @@ function ContentTab({
         | MultipleChoiceSlide
         | QuizSlide
         | ImageChoiceSlide;
-      const colors = [
-        "#6366f1",
-        "#8b5cf6",
-        "#a855f7",
-        "#d946ef",
-        "#ec4899",
-        "#f43f5e",
-      ];
+      const colors = OPTION_COLORS;
       const newOption: SlideOption = {
         id: nanoid(),
         text: `Option ${currentSlide.options.length + 1}`,
@@ -166,14 +143,7 @@ function ContentTab({
   const handleAddRankingItem = () => {
     if (slide.type === "ranking") {
       const currentSlide = slide as RankingSlide;
-      const colors = [
-        "#6366f1",
-        "#8b5cf6",
-        "#a855f7",
-        "#d946ef",
-        "#ec4899",
-        "#f43f5e",
-      ];
+      const colors = OPTION_COLORS;
       const newItem: SlideOption = {
         id: nanoid(),
         text: `Item ${currentSlide.items.length + 1}`,
@@ -194,14 +164,7 @@ function ContentTab({
   const handleAddPointsItem = () => {
     if (slide.type === "100-points") {
       const currentSlide = slide as PointsSlide;
-      const colors = [
-        "#6366f1",
-        "#8b5cf6",
-        "#a855f7",
-        "#d946ef",
-        "#ec4899",
-        "#f43f5e",
-      ];
+      const colors = OPTION_COLORS;
       const newItem: SlideOption = {
         id: nanoid(),
         text: `Item ${currentSlide.items.length + 1}`,
@@ -387,7 +350,6 @@ function ContentTab({
 
   return (
     <div className="space-y-6 bg-zinc-50 p-10 rounded-2xl">
-      {/* Common fields */}
       <div className="space-y-2">
         <Label htmlFor="title">Title</Label>
         <Input
@@ -408,7 +370,6 @@ function ContentTab({
         />
       </div>
 
-      {/* Content field for content slides */}
       {slide.type === "content" && (
         <div className="space-y-2">
           <Label htmlFor="content">Content</Label>
@@ -422,7 +383,6 @@ function ContentTab({
         </div>
       )}
 
-      {/* Options for multiple choice, quiz, and image-choice */}
       {(slide.type === "multiple-choice" ||
         slide.type === "quiz" ||
         slide.type === "image-choice") && (
@@ -437,7 +397,7 @@ function ContentTab({
           <div className="space-y-2">
             {(
               slide as MultipleChoiceSlide | QuizSlide | ImageChoiceSlide
-            ).options.map((option, index) => (
+            ).options.map((option) => (
               <div
                 key={option.id}
                 className="flex items-center gap-2 rounded-lg border p-2"
@@ -475,7 +435,6 @@ function ContentTab({
         </div>
       )}
 
-      {/* Ranking items */}
       {slide.type === "ranking" && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -514,7 +473,6 @@ function ContentTab({
         </div>
       )}
 
-      {/* 100-points items */}
       {slide.type === "100-points" && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -566,7 +524,6 @@ function ContentTab({
         </div>
       )}
 
-      {/* Wheel of Names */}
       {slide.type === "wheel-of-names" && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -600,7 +557,6 @@ function ContentTab({
         </div>
       )}
 
-      {/* Quiz specific fields */}
       {slide.type === "quiz" && (
         <>
           <Separator />
@@ -641,7 +597,6 @@ function ContentTab({
         </>
       )}
 
-      {/* Open ended specific */}
       {slide.type === "open-ended" && (
         <div className="space-y-2">
           <Label htmlFor="placeholder">Placeholder Text</Label>
@@ -654,7 +609,6 @@ function ContentTab({
         </div>
       )}
 
-      {/* Word cloud specific */}
       {slide.type === "word-cloud" && (
         <div className="space-y-4">
           <div className="space-y-2">
@@ -675,7 +629,6 @@ function ContentTab({
         </div>
       )}
 
-      {/* Rating specific */}
       {slide.type === "rating" && (
         <div className="space-y-4">
           <div className="space-y-2">
@@ -739,7 +692,6 @@ function ContentTab({
         </div>
       )}
 
-      {/* Scales specific */}
       {slide.type === "scales" && (
         <div className="space-y-4">
           <div className="space-y-2">
@@ -808,7 +760,6 @@ function ContentTab({
         </div>
       )}
 
-      {/* Number input specific */}
       {slide.type === "number" && (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -854,7 +805,6 @@ function ContentTab({
         </div>
       )}
 
-      {/* Pin on Image specific */}
       {slide.type === "pin-on-image" && (
         <div className="space-y-4">
           <div className="space-y-2">
@@ -876,7 +826,6 @@ function ContentTab({
         </div>
       )}
 
-      {/* Q&A specific */}
       {slide.type === "qa" && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -899,13 +848,7 @@ function ContentTab({
   );
 }
 
-function DesignTab({
-  slide,
-  onUpdate,
-}: {
-  slide: Slide;
-  onUpdate: (updates: Partial<Slide>) => void;
-}) {
+function DesignTab({ slide, onUpdate }: DesignTabProps) {
   const handleThemeUpdate = (themeUpdates: Partial<Slide["theme"]>) => {
     onUpdate({
       theme: {
@@ -1022,13 +965,7 @@ function DesignTab({
   );
 }
 
-function SettingsTab({
-  slide,
-  onUpdate,
-}: {
-  slide: Slide;
-  onUpdate: (updates: Partial<Slide>) => void;
-}) {
+function SettingsTab({ slide, onUpdate }: SettingsTabProps) {
   const handleSettingsUpdate = (
     settingsUpdates: Partial<Slide["settings"]>,
   ) => {
