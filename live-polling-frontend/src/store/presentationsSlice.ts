@@ -26,6 +26,7 @@ const presentationsSlice = createSlice({
         updatedAt: new Date().toISOString(),
         status: 'draft',
         theme: action.payload.theme || DEFAULT_THEME,
+        isAIGenerated: action.payload.isAIGenerated || false,
       }
       state.items.unshift(newPresentation)
     },
