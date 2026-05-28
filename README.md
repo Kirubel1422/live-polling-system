@@ -72,8 +72,6 @@ The frontend should now be running on `http://localhost:5173`.
 
 ---
 
-## 🐳 Running with Docker
-
 ## 🐳 Running with Docker (The Easiest Way)
 
 This repository includes a `docker-compose.yml` file to spin up the Database, Backend, and Frontend all at once—perfect for quickly testing the app right after cloning.
