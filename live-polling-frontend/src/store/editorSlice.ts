@@ -2,7 +2,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 
 interface EditorState {
   selectedSlideId: string | null
-  rightPanelTab: 'content' | 'design' | 'settings'
+  rightPanelTab: 'design' | 'settings'
   isAIModalOpen: boolean
   aiGenerationProgress: number
   aiGenerationStatus: 'idle' | 'generating' | 'complete' | 'error'
@@ -12,7 +12,7 @@ interface EditorState {
 
 const initialState: EditorState = {
   selectedSlideId: null,
-  rightPanelTab: 'content',
+  rightPanelTab: 'design',
   isAIModalOpen: false,
   aiGenerationProgress: 0,
   aiGenerationStatus: 'idle',
@@ -29,7 +29,7 @@ const editorSlice = createSlice({
     },
     setRightPanelTab: (
       state,
-      action: PayloadAction<'content' | 'design' | 'settings'>
+      action: PayloadAction<'design' | 'settings'>
     ) => {
       state.rightPanelTab = action.payload
     },

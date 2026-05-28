@@ -18,13 +18,13 @@ const presentationsSlice = createSlice({
   reducers: {
     addPresentation: (state, action: PayloadAction<Partial<Presentation>>) => {
       const newPresentation: Presentation = {
-        id: nanoid(),
+        id: action.payload.id || nanoid(),
         title: action.payload.title || 'Untitled Presentation',
         description: action.payload.description || '',
         slides: action.payload.slides || [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        status: 'draft',
+        createdAt: action.payload.createdAt || new Date().toISOString(),
+        updatedAt: action.payload.updatedAt || new Date().toISOString(),
+        status: action.payload.status || 'draft',
         theme: action.payload.theme || DEFAULT_THEME,
         isAIGenerated: action.payload.isAIGenerated || false,
       }
@@ -112,6 +112,21 @@ const presentationsSlice = createSlice({
         }
       }
     },
+    applyThemeToAll: (
+      state,
+      action: PayloadAction<{ presentationId: string; theme: any }>
+    ) => {
+      const presentation = state.items.find(
+        (p) => p.id === action.payload.presentationId
+      )
+      if (presentation) {
+        presentation.theme = action.payload.theme
+        presentation.slides.forEach((slide) => {
+          slide.theme = action.payload.theme
+        })
+        presentation.updatedAt = new Date().toISOString()
+      }
+    },
     deleteSlide: (
       state,
       action: PayloadAction<{ presentationId: string; slideId: string }>
@@ -186,6 +201,7 @@ export const {
   deleteSlide,
   reorderSlides,
   duplicateSlide,
+  applyThemeToAll,
 } = presentationsSlice.actions
 
 export default presentationsSlice.reducer
