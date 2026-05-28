@@ -30,7 +30,6 @@ export const SLIDE_TEMPLATES = [
 
 // From RightPanel.tsx
 export const RIGHT_PANEL_TABS = [
-  { id: "content" as const, label: "Edit", icon: FileText },
   { id: "design" as const, label: "Design", icon: Palette },
   { id: "settings" as const, label: "Settings", icon: Settings },
 ];

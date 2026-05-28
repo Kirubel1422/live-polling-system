@@ -20,9 +20,11 @@ import { setSelectedSlide } from '@/store/editorSlice';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { SlideListProps } from './types';
 import SlideThumbnail from './SlideThumbnail';
+import { useReorderSlidesMutation } from "@/api/presentations.api";
 
-export default function SlideList({ slides, selectedSlideId, presentationId }: SlideListProps) {
+export default function SlideList({ slides, selectedSlideId, presentationId, isTemplatePreview }: SlideListProps) {
   const dispatch = useAppDispatch();
+  const [reorderSlidesApi] = useReorderSlidesMutation();
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -31,13 +33,25 @@ export default function SlideList({ slides, selectedSlideId, presentationId }: S
 
   const sortedSlides = useMemo(() => [...slides].sort((a, b) => a.order - b.order), [slides]);
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     if (over && active.id !== over.id) {
       const oldIndex = sortedSlides.findIndex((s) => s.id === active.id);
       const newIndex = sortedSlides.findIndex((s) => s.id === over.id);
       const newOrder = arrayMove(sortedSlides, oldIndex, newIndex);
-      dispatch(reorderSlides({ presentationId, slideIds: newOrder.map((s) => s.id) }));
+      const slideIds = newOrder.map((s) => s.id);
+      
+      // Update local state immediately
+      dispatch(reorderSlides({ presentationId, slideIds }));
+      
+      // Update backend only for real (non-template) presentations
+      if (!isTemplatePreview) {
+        try {
+          await reorderSlidesApi({ id: presentationId, slideIds }).unwrap();
+        } catch (err) {
+          console.error("Failed to reorder slides on backend", err);
+        }
+      }
     }
   };
 
@@ -54,6 +68,7 @@ export default function SlideList({ slides, selectedSlideId, presentationId }: S
                 isSelected={slide.id === selectedSlideId}
                 onClick={() => dispatch(setSelectedSlide(slide.id))}
                 presentationId={presentationId}
+                isTemplatePreview={isTemplatePreview}
               />
             ))}
           </div>

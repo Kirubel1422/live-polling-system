@@ -3,6 +3,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Copy, MoreHorizontal, Trash2 } from 'lucide-react';
 import { useAppDispatch } from '@/store/hooks';
 import { deleteSlide, duplicateSlide } from '@/store/presentationsSlice';
+import { useDeleteSlideMutation, useDuplicateSlideMutation } from '@/api/slides.api';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -15,20 +16,45 @@ import { cn } from '@/lib/utils';
 import { SlideThumbnailProps } from './types';
 import { renderSlideContent } from './SlideCanvas';
 
-export default function SlideThumbnail({ slide, index, isSelected, onClick, presentationId }: SlideThumbnailProps) {
+/** UUID v4 regex — slides that exist in the DB always have this format. */
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isDbId = (id: string) => UUID_REGEX.test(id);
+
+export default function SlideThumbnail({ slide, index, isSelected, onClick, presentationId, isTemplatePreview }: SlideThumbnailProps) {
   const dispatch = useAppDispatch();
+  const [deleteSlideApi] = useDeleteSlideMutation();
+  const [duplicateSlideApi] = useDuplicateSlideMutation();
+
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: slide.id });
 
   const style = { transform: CSS.Transform.toString(transform), transition };
 
-  const handleDelete = (e: React.MouseEvent) => {
+  const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    // Optimistic local update
     dispatch(deleteSlide({ presentationId, slideId: slide.id }));
+    // Only call the API if the slide is persisted (has a real UUID) and not in template preview
+    if (!isTemplatePreview && isDbId(slide.id)) {
+      try {
+        await deleteSlideApi({ presentationId, slideId: slide.id }).unwrap();
+      } catch (err) {
+        console.error('Failed to delete slide', err);
+      }
+    }
   };
 
-  const handleDuplicate = (e: React.MouseEvent) => {
+  const handleDuplicate = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    // Optimistic local update — inserts immediately after parent, shifting the rest
     dispatch(duplicateSlide({ presentationId, slideId: slide.id }));
+    // Only call the API if the slide is persisted (has a real UUID) and not in template preview
+    if (!isTemplatePreview && isDbId(slide.id)) {
+      try {
+        await duplicateSlideApi({ presentationId, slideId: slide.id }).unwrap();
+      } catch (err) {
+        console.error('Failed to duplicate slide', err);
+      }
+    }
   };
 
   return (
@@ -77,3 +103,5 @@ export default function SlideThumbnail({ slide, index, isSelected, onClick, pres
     </div>
   );
 }
+
+

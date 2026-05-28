@@ -247,16 +247,14 @@ function MultipleChoicePresenter({ slide }: { slide: MultipleChoiceSlide }) {
         <h2
           className="text-4xl font-bold mb-2"
           style={{ color: slide.theme.textColor }}
-        >
-          {slide.title}
-        </h2>
+          dangerouslySetInnerHTML={{ __html: slide.title }}
+        />
         {slide.subtitle && (
           <p
             className="text-xl opacity-70"
             style={{ color: slide.theme.textColor }}
-          >
-            {slide.subtitle}
-          </p>
+            dangerouslySetInnerHTML={{ __html: slide.subtitle }}
+          />
         )}
       </div>
       <div className="grid flex-1 grid-cols-2 gap-4">
@@ -283,16 +281,14 @@ function OpenEndedPresenter({ slide }: { slide: OpenEndedSlide }) {
       <h2
         className="text-4xl font-bold mb-4"
         style={{ color: slide.theme.textColor }}
-      >
-        {slide.title}
-      </h2>
+        dangerouslySetInnerHTML={{ __html: slide.title }}
+      />
       {slide.subtitle && (
         <p
           className="text-xl mb-8 opacity-70"
           style={{ color: slide.theme.textColor }}
-        >
-          {slide.subtitle}
-        </p>
+          dangerouslySetInnerHTML={{ __html: slide.subtitle }}
+        />
       )}
       <div
         className="w-full max-w-2xl rounded-2xl border-2 border-dashed p-12"
@@ -334,9 +330,8 @@ function QuizPresenter({ slide }: { slide: QuizSlide }) {
         <h2
           className="text-4xl font-bold"
           style={{ color: slide.theme.textColor }}
-        >
-          {slide.title}
-        </h2>
+          dangerouslySetInnerHTML={{ __html: slide.title }}
+        />
       </div>
       <div className="grid flex-1 grid-cols-2 gap-4">
         {slide.options.map((option, index) => (
@@ -362,24 +357,21 @@ function ContentPresenter({ slide }: { slide: ContentSlide }) {
       <h2
         className="text-5xl font-bold mb-6"
         style={{ color: slide.theme.textColor }}
-      >
-        {slide.title}
-      </h2>
+        dangerouslySetInnerHTML={{ __html: slide.title }}
+      />
       {slide.subtitle && (
         <p
           className="text-2xl mb-8 opacity-70"
           style={{ color: slide.theme.textColor }}
-        >
-          {slide.subtitle}
-        </p>
+          dangerouslySetInnerHTML={{ __html: slide.subtitle }}
+        />
       )}
       {slide.content && (
         <p
           className="text-xl max-w-3xl opacity-80 leading-relaxed"
           style={{ color: slide.theme.textColor }}
-        >
-          {slide.content}
-        </p>
+          dangerouslySetInnerHTML={{ __html: slide.content }}
+        />
       )}
     </div>
   );
@@ -391,16 +383,14 @@ function DefaultPresenter({ slide }: { slide: Slide }) {
       <h2
         className="text-5xl font-bold mb-6"
         style={{ color: slide.theme.textColor }}
-      >
-        {slide.title}
-      </h2>
+        dangerouslySetInnerHTML={{ __html: slide.title }}
+      />
       {slide.subtitle && (
         <p
           className="text-2xl opacity-70"
           style={{ color: slide.theme.textColor }}
-        >
-          {slide.subtitle}
-        </p>
+          dangerouslySetInnerHTML={{ __html: slide.subtitle }}
+        />
       )}
     </div>
   );
@@ -414,9 +404,10 @@ function PhoneSlideView({ slide }: { slide: Slide }) {
         const optionSlide = slide as MultipleChoiceSlide | QuizSlide;
         return (
           <div className="flex h-full flex-col p-4">
-            <h3 className="mb-4 text-center text-sm font-semibold">
-              {slide.title}
-            </h3>
+            <h3
+              className="mb-4 text-center text-sm font-semibold"
+              dangerouslySetInnerHTML={{ __html: slide.title }}
+            />
             <div className="flex flex-1 flex-col gap-2">
               {optionSlide.options.map((option, index) => (
                 <button
@@ -440,9 +431,10 @@ function PhoneSlideView({ slide }: { slide: Slide }) {
       case "open-ended":
         return (
           <div className="flex h-full flex-col p-4">
-            <h3 className="mb-4 text-center text-sm font-semibold">
-              {slide.title}
-            </h3>
+            <h3
+              className="mb-4 text-center text-sm font-semibold"
+              dangerouslySetInnerHTML={{ __html: slide.title }}
+            />
             <div className="flex-1">
               <textarea
                 className="h-32 w-full rounded-lg border p-3 text-sm"
@@ -458,11 +450,15 @@ function PhoneSlideView({ slide }: { slide: Slide }) {
       default:
         return (
           <div className="flex h-full flex-col items-center justify-center p-4 text-center">
-            <h3 className="text-sm font-semibold">{slide.title}</h3>
+            <h3
+              className="text-sm font-semibold"
+              dangerouslySetInnerHTML={{ __html: slide.title }}
+            />
             {slide.subtitle && (
-              <p className="mt-2 text-xs text-muted-foreground">
-                {slide.subtitle}
-              </p>
+              <p
+                className="mt-2 text-xs text-muted-foreground"
+                dangerouslySetInnerHTML={{ __html: slide.subtitle }}
+              />
             )}
           </div>
         );

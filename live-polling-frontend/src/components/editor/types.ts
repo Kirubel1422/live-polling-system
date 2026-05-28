@@ -17,6 +17,7 @@ export interface ContentComponentProps<T extends Slide> {
 export interface RightPanelProps {
   slide: Slide;
   presentationId: string;
+  isTemplatePreview?: boolean;
 }
 
 export interface BaseTabProps {
@@ -28,8 +29,14 @@ export interface ContentTabProps extends BaseTabProps {
   presentationId: string;
 }
 
-export type DesignTabProps = BaseTabProps;
-export type SettingsTabProps = BaseTabProps;
+export interface DesignTabProps extends BaseTabProps {
+  presentationId: string;
+}
+export interface SettingsTabProps extends BaseTabProps {
+  presentationId: string;
+  slideId: string;
+  isTemplatePreview?: boolean;
+}
 
 // From AddSlideMenu.tsx
 export interface AddSlideMenuProps {
@@ -41,6 +48,7 @@ export interface SlideListProps {
   slides: Slide[];
   selectedSlideId: string | null;
   presentationId: string;
+  isTemplatePreview?: boolean;
 }
 
 // From SlideThumbnail.tsx
@@ -50,4 +58,5 @@ export interface SlideThumbnailProps {
   isSelected: boolean;
   onClick: () => void;
   presentationId: string;
+  isTemplatePreview?: boolean;
 }

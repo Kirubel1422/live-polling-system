@@ -1,5 +1,5 @@
 import { Plus } from 'lucide-react';
-import { useAppDispatch } from '@/store/hooks';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { addSlide } from '@/store/presentationsSlice';
 import { setSelectedSlide } from '@/store/editorSlice';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuGroup,
 } from '@/components/ui/dropdown-menu';
-import { SlideType } from '@/types/presentation';
+import { SlideType, Slide } from '@/types/presentation';
 import { AddSlideMenuProps } from './types';
 import { SLIDE_TEMPLATES } from './data.const';
 import { createSlideByType } from './hooks';
@@ -23,10 +23,29 @@ import { createSlideByType } from './hooks';
 
 export default function AddSlideMenu({ presentationId }: AddSlideMenuProps) {
   const dispatch = useAppDispatch();
+  const presentation = useAppSelector((state) => 
+    state.presentations.items.find((p) => p.id === presentationId)
+  );
+  const selectedSlideId = useAppSelector((state) => state.editor.selectedSlideId);
 
   const handleAddSlide = (type: SlideType) => {
     const newSlide = createSlideByType(type);
-    dispatch(addSlide({ presentationId, slide: newSlide }));
+    
+    // Inherit presentation theme
+    if (presentation?.theme) {
+      newSlide.theme = { ...presentation.theme };
+    }
+
+    // Determine insert index
+    let insertIndex: number | undefined = undefined;
+    if (presentation && selectedSlideId) {
+      const currentIndex = presentation.slides.findIndex((s: Slide) => s.id === selectedSlideId);
+      if (currentIndex !== -1) {
+        insertIndex = currentIndex + 1;
+      }
+    }
+
+    dispatch(addSlide({ presentationId, slide: newSlide, index: insertIndex }));
     dispatch(setSelectedSlide(newSlide.id));
   };
 
