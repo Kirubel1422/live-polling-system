@@ -62,25 +62,29 @@ const SlideSchema = zod.object({
 // ── Presentation schemas ──────────────────────────────────────────────────────
 
 export const CreatePresentationSchema = zod.object({
-  title: zod.string().min(1, "Title is required").max(200),
-  description: zod.string().max(1000).optional(),
-  thumbnail: zod.string().url().optional(),
-  status: zod.enum(["draft", "published", "archived"]).default("draft"),
-  theme: SlideThemeSchema,
-  templateId: zod.string().optional(),
-  isAIGenerated: zod.boolean().default(false),
-  slides: zod.array(SlideSchema).default([]),
+  body: zod.object({
+    title: zod.string().min(1, "Title is required").max(200),
+    description: zod.string().max(1000).optional(),
+    thumbnail: zod.string().url().optional(),
+    status: zod.enum(["draft", "published", "archived"]).default("draft"),
+    theme: SlideThemeSchema,
+    templateId: zod.string().optional(),
+    isAIGenerated: zod.boolean().default(false),
+    slides: zod.array(SlideSchema).default([]),
+  }),
 });
 
 export const UpdatePresentationSchema = zod.object({
-  title: zod.string().min(1).max(200).optional(),
-  description: zod.string().max(1000).optional(),
-  thumbnail: zod.string().url().optional(),
-  status: zod.enum(["draft", "published", "archived"]).optional(),
-  theme: SlideThemeSchema.optional(),
-  templateId: zod.string().optional(),
-  slides: zod.array(SlideSchema).optional(),
+  body: zod.object({
+    title: zod.string().min(1).max(200).optional(),
+    description: zod.string().max(1000).optional(),
+    thumbnail: zod.string().url().optional(),
+    status: zod.enum(["draft", "published", "archived"]).optional(),
+    theme: SlideThemeSchema.optional(),
+    templateId: zod.string().optional(),
+    slides: zod.array(SlideSchema).optional(),
+  }),
 });
 
-export type CreatePresentationDto = zod.infer<typeof CreatePresentationSchema>;
-export type UpdatePresentationDto = zod.infer<typeof UpdatePresentationSchema>;
+export type CreatePresentationDto = zod.infer<typeof CreatePresentationSchema>["body"];
+export type UpdatePresentationDto = zod.infer<typeof UpdatePresentationSchema>["body"];

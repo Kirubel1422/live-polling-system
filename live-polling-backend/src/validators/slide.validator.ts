@@ -138,56 +138,62 @@ export const SLIDE_TYPES = [
 // ── CreateSlide schema ────────────────────────────────────────────────────────
 
 export const CreateSlideSchema = zod.object({
-  type: zod.enum(SLIDE_TYPES),
-  title: zod.string().min(1, "Slide title is required").max(300),
-  subtitle: zod.string().max(500).optional(),
-  order: zod.number().int().min(0),
-  theme: SlideThemeSchema,
-  settings: SlideSettingsSchema.default({}),
+  body: zod.object({
+    type: zod.enum(SLIDE_TYPES),
+    title: zod.string().min(1, "Slide title is required").max(300),
+    subtitle: zod.string().max(500).optional(),
+    order: zod.number().int().min(0),
+    theme: SlideThemeSchema,
+    settings: SlideSettingsSchema.default({}),
 
-  /**
-   * Choice-based options (multiple-choice, quiz, ranking, image-choice, 100-points).
-   * The server validates that options are provided when the type requires them.
-   */
-  options: zod.array(SlideOptionSchema).optional(),
+    /**
+     * Choice-based options (multiple-choice, quiz, ranking, image-choice, 100-points).
+     * The server validates that options are provided when the type requires them.
+     */
+    options: zod.array(SlideOptionSchema).optional(),
 
-  /**
-   * Type-specific extra fields stored as JSONB meta.
-   * Validated loosely here (record of unknown) — each route can do
-   * deep type-specific validation if needed in the future.
-   */
-  meta: zod.record(zod.unknown()).optional(),
+    /**
+     * Type-specific extra fields stored as JSONB meta.
+     * Validated loosely here (record of unknown) — each route can do
+     * deep type-specific validation if needed in the future.
+     */
+    meta: zod.record(zod.unknown()).optional(),
+  }),
 });
 
 // ── UpdateSlide schema ────────────────────────────────────────────────────────
 
 export const UpdateSlideSchema = zod.object({
-  title: zod.string().min(1).max(300).optional(),
-  subtitle: zod.string().max(500).optional(),
-  order: zod.number().int().min(0).optional(),
-  theme: SlideThemeSchema.optional(),
-  settings: SlideSettingsSchema.optional(),
-  options: zod.array(SlideOptionSchema).optional(),
-  meta: zod.record(zod.unknown()).optional(),
+  body: zod.object({
+    title: zod.string().min(1).max(300).optional(),
+    subtitle: zod.string().max(500).optional(),
+    order: zod.number().int().min(0).optional(),
+    theme: SlideThemeSchema.optional(),
+    settings: SlideSettingsSchema.optional(),
+    options: zod.array(SlideOptionSchema).optional(),
+    meta: zod.record(zod.unknown()).optional(),
+  }),
 });
 
 // ── Reorder schema ────────────────────────────────────────────────────────────
 
 export const ReorderSlidesSchema = zod.object({
-  /**
-   * Array of slide IDs in the desired order.
-   * The server will update the `order` field of each slide accordingly.
-   */
-  slideIds: zod
-    .array(zod.string().uuid("Invalid slide ID"))
-    .min(1, "slideIds must not be empty"),
+  body: zod.object({
+    /**
+     * Array of slide IDs in the desired order.
+     * The server will update the `order` field of each slide accordingly.
+     */
+    slideIds: zod
+      .array(zod.string().uuid("Invalid slide ID"))
+      .min(1, "slideIds must not be empty"),
+  }),
 });
 
 // ── Exported types ────────────────────────────────────────────────────────────
 
-export type CreateSlideDto = zod.infer<typeof CreateSlideSchema>;
-export type UpdateSlideDto = zod.infer<typeof UpdateSlideSchema>;
-export type ReorderSlidesDto = zod.infer<typeof ReorderSlidesSchema>;
+export type CreateSlideDto = zod.infer<typeof CreateSlideSchema>["body"];
+export type UpdateSlideDto = zod.infer<typeof UpdateSlideSchema>["body"];
+export type ReorderSlidesDto = zod.infer<typeof ReorderSlidesSchema>["body"];
 
 // Re-export meta schemas for use in service-level validation if needed
 export {

@@ -1,6 +1,6 @@
 import Lottie from 'lottie-react';
-import idle from '../../../public/idle.json';
-import generating from '../../../public/generating-loading.json';
+import generating from '../../assets/generating-loading.json';
+import idle from '../../assets/idle.json';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
