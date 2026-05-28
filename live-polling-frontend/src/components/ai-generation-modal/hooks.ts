@@ -3,7 +3,6 @@ import { nanoid } from 'nanoid';
 import {
   PLACEHOLDERS,
   LOADING_FACTS,
-  DEFAULT_SLIDE_COUNT,
   GENERATION_STEPS,
   GENERATION_STEP_DELAY_MS,
   LOADING_FACT_INTERVAL_MS,
@@ -11,7 +10,11 @@ import {
   PLACEHOLDER_DELETE_SPEED_MS,
   PLACEHOLDER_PAUSE_MS,
 } from './data.const';
+import { useNavigate } from 'react-router-dom';
 import type { ChatMessage, AIModalActions } from './types';
+import { useGeneratePresentationMutation } from '@/api/presentations.api';
+import { useAppDispatch } from '@/store/hooks';
+import { addPresentation } from '@/store/presentationsSlice';
 import {
   DEFAULT_THEME,
   type Slide,
@@ -167,11 +170,14 @@ export async function simulateProgress(onProgress: (pct: number) => void): Promi
 
 export function useAIModalState(actions: AIModalActions) {
   const [prompt, setPrompt] = useState('');
-  const [slideCount] = useState([DEFAULT_SLIDE_COUNT]);
   const [generatedSlides, setGeneratedSlides] = useState<Slide[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isThinking, setIsThinking] = useState(false);
   const thinkingText = 'Thinking ...';
+
+  const [generatePresentation] = useGeneratePresentationMutation();
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
@@ -181,15 +187,48 @@ export function useAIModalState(actions: AIModalActions) {
     setIsThinking(true);
     actions.onDispatchStatus('generating');
     actions.onDispatchProgress(0);
-    await simulateProgress(actions.onDispatchProgress);
-    const slides = await buildMockSlides(userMessage, slideCount[0]);
-    setGeneratedSlides(slides);
-    setIsThinking(false);
-    setChatMessages((prev) => [
-      ...prev,
-      { role: 'ai', text: `I've created ${slides.length} slides based on your request! You can see the preview on the right.` },
-    ]);
-    actions.onDispatchStatus('complete');
+
+    // Simulate progress while waiting for the real API call
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += 5;
+      if (progress < 95) {
+        actions.onDispatchProgress(progress);
+      }
+    }, 1000);
+
+    try {
+      const presentation = await generatePresentation({ prompt: userMessage }).unwrap();
+      clearInterval(interval);
+      actions.onDispatchProgress(100);
+
+      const slides = presentation.slides || [];
+      setGeneratedSlides(slides);
+      
+      // Store the generated presentation in Redux
+      dispatch(addPresentation(presentation as any));
+
+      setIsThinking(false);
+      setChatMessages((prev) => [
+        ...prev,
+        { role: 'ai', text: `I've created ${slides.length} slides based on your request! I've also automatically saved this presentation for you.` },
+      ]);
+      actions.onDispatchStatus('complete');
+      
+      // Close the modal and redirect to editor
+      setTimeout(() => {
+        handleClose();
+        navigate(`/editor/${presentation.id}`);
+      }, 1500); // Give user a brief moment to see the success message
+    } catch (error) {
+      clearInterval(interval);
+      setIsThinking(false);
+      setChatMessages((prev) => [
+        ...prev,
+        { role: 'ai', text: `Sorry, there was an error generating your presentation. Please try again.` },
+      ]);
+      actions.onDispatchStatus('idle');
+    }
   };
 
   const handleClose = () => {
