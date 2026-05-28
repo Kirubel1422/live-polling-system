@@ -38,6 +38,7 @@ services:
       - JWT_EXPIRES_IN=7d
       - COOKIE_SECRET=cookiesecret123
       - COOKIE_DOMAIN=localhost
+      - AI_MODEL_NAME=openrouter/owl-alpha
       # Uncomment and add your OpenRouter key to test AI generation
       # - AI_API_KEY=your_openrouter_api_key
     depends_on:
