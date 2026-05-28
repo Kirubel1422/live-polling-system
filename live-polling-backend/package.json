@@ -1,0 +1,51 @@
+{
+  "name": "live-polling-backend",
+  "version": "1.0.0",
+  "description": "Backend for the Live Polling System",
+  "main": "dist/app.js",
+  "scripts": {
+    "build": "npx tsc",
+    "start": "node dist/app.js",
+    "dev": "nodemon -r tsconfig-paths/register src/app.ts",
+    "seed:templates": "ts-node -r tsconfig-paths/register src/scripts/seed-templates.ts",
+    "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cookie-parser": "^1.4.8",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.1",
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/node": "^22.13.13",
+    "@types/nodemailer": "^6.4.17",
+    "@types/passport": "^1.0.17",
+    "@types/passport-jwt": "^4.0.1",
+    "@types/passport-local": "^1.0.38",
+    "@types/socket.io": "^3.0.2",
+    "nodemon": "^3.1.9",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.2"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^6.10.0",
+    "passport": "^0.7.0",
+    "passport-jwt": "^4.0.1",
+    "passport-local": "^1.0.0",
+    "pg": "^8.13.3",
+    "reflect-metadata": "^0.2.2",
+    "socket.io": "^4.8.1",
+    "tsconfig-paths": "^4.2.0",
+    "typeorm": "^0.3.22",
+    "winston": "^3.17.0",
+    "zod": "^3.24.2"
+  }
+}
