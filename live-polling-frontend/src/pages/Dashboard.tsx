@@ -9,7 +9,6 @@ import { DEFAULT_THEME } from "@/types/presentation";
 import { store } from "@/store";
 import DashboardHeader from "@/components/dashboard/header";
 import TemplatesList from "@/components/dashboard/templates";
-import { TEMPLATES } from "@/data/mock";
 import AIGenerationModal from "@/components/ai-generation-modal/AIGenerationModal";
 import RecentPresentations from "@/components/dashboard/recent-presentation";
 
@@ -36,23 +35,21 @@ export default function Dashboard() {
     }, 50);
   };
 
-  const handleCreateFromTemplate = (templateId: string) => {
-    const template = TEMPLATES.find((t) => t.id === templateId);
-    dispatch(
-      addPresentation({
-        title: template?.title || "New Presentation",
-        description: template?.description,
-        theme: DEFAULT_THEME,
-      }),
-    );
-    // Navigate after the state updates
-    setTimeout(() => {
-      const state = store.getState();
-      const newPresentation = state.presentations.items[0];
-      if (newPresentation) {
-        navigate(`/editor/${newPresentation.id}`);
-      }
-    }, 50);
+  const handleCreateFromTemplate = (template: any) => {
+    const ephemeralId = `template-${template.id}`;
+    const newPresentation = {
+      id: ephemeralId,
+      title: template.title,
+      description: template.description,
+      slides: template.slides,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      status: "draft",
+      theme: DEFAULT_THEME,
+      isAIGenerated: false,
+    };
+    dispatch(addPresentation(newPresentation as any));
+    navigate(`/editor/${ephemeralId}`);
   };
 
   const handleOpenPresentation = (id: string) => {

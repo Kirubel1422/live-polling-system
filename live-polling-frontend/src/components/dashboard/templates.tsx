@@ -1,12 +1,33 @@
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
-import { TEMPLATES } from "@/data/mock";
+import { useGetTemplatesQuery } from "@/api/templates.api";
+import { Loader2 } from "lucide-react";
 
 export default function TemplatesList({
   handleCreateFromTemplate,
 }: {
-  handleCreateFromTemplate: (id: string) => void;
+  handleCreateFromTemplate: (template: any) => void;
 }) {
+  const { data: templates, isLoading, isError } = useGetTemplatesQuery();
+
+  if (isLoading) {
+    return (
+      <section className="mb-12 flex justify-center items-center h-40">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </section>
+    );
+  }
+
+  if (isError || !templates) {
+    return (
+      <section className="mb-12">
+        <div className="p-6 bg-red-50 text-red-600 rounded-lg">
+          Failed to load templates.
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="mb-12">
       <div className="mb-4 flex items-center justify-between">
@@ -16,11 +37,11 @@ export default function TemplatesList({
         </Button>
       </div>
       <div className="grid bg-primary/10 rounded-2xl p-7 grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
-        {TEMPLATES.map((template) => (
+        {templates.map((template) => (
           <Card
             key={template.id}
             className="group -space-y-6 cursor-pointer overflow-hidden border-none py-0 transition-all shadow-none"
-            onClick={() => handleCreateFromTemplate(template.id)}
+            onClick={() => handleCreateFromTemplate(template)}
           >
             <div
               className="aspect-[4/3] w-full relative flex flex-col items-center justify-center p-6 overflow-hidden"

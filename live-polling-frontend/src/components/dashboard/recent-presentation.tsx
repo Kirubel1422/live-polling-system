@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { Button } from "../ui/button";
 import {
   Copy,
@@ -23,11 +22,10 @@ import { ScrollArea } from "../ui/scroll-area";
 import { Badge } from "../ui/badge";
 import { format } from "date-fns";
 import { cn, getStatusColor } from "@/lib";
-import {
-  deletePresentation,
-  duplicatePresentation,
-} from "@/store/presentationsSlice";
 import { renderSlideContent } from "../editor/SlideCanvas";
+import { useGetPresentationsQuery, useDeletePresentationMutation, useDuplicatePresentationMutation } from "@/api/presentations.api";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 export default function RecentPresentations({
   searchQuery,
@@ -38,24 +36,44 @@ export default function RecentPresentations({
   handleCreateNew: () => void;
   handleOpenPresentation: (id: string) => void;
 }) {
-  const dispatch = useAppDispatch();
+  const { data: presentations = [], isLoading } = useGetPresentationsQuery();
+  const [deletePresentationApi] = useDeletePresentationMutation();
+  const [duplicatePresentationApi] = useDuplicatePresentationMutation();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const presentations = useAppSelector((state) => state.presentations.items);
+
   const filteredPresentations = presentations.filter((p) =>
     p.title.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  const handleDeletePresentation = (id: string) => {
-    dispatch(deletePresentation(id));
+  const handleDeletePresentation = async (id: string) => {
+    try {
+      await deletePresentationApi(id).unwrap();
+      toast.success("Presentation deleted");
+    } catch (e) {
+      toast.error("Failed to delete presentation");
+    }
   };
 
-  const handleDuplicatePresentation = (id: string) => {
-    dispatch(duplicatePresentation(id));
+  const handleDuplicatePresentation = async (id: string) => {
+    try {
+      await duplicatePresentationApi(id).unwrap();
+      toast.success("Presentation duplicated");
+    } catch (e) {
+      toast.error("Failed to duplicate presentation");
+    }
   };
 
   const totalPresentations = presentations.filter(
     (pres) => Array.isArray(pres.slides) && pres.slides.length > 0,
   ).length;
+
+  if (isLoading) {
+    return (
+      <section className="mb-12 flex justify-center items-center h-40">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </section>
+    );
+  }
   return (
     <section>
       <div className="mb-4 flex items-center justify-between">

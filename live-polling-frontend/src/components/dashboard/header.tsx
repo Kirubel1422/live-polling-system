@@ -1,7 +1,5 @@
 import {
   BadgeCheckIcon,
-  BellIcon,
-  CreditCardIcon,
   LogOutIcon,
   Moon,
   Search,
@@ -69,14 +67,14 @@ export default function DashboardHeader({
                     Account
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                {/* <DropdownMenuItem>
                   <CreditCardIcon />
                   Billing
-                </DropdownMenuItem>
-                <DropdownMenuItem>
+                </DropdownMenuItem> */}
+                {/* <DropdownMenuItem>
                   <BellIcon />
                   Notifications
-                </DropdownMenuItem>
+                </DropdownMenuItem> */}
                 <DropdownMenuItem onClick={toggleTheme}>
                   {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
                   {theme === 'dark' ? 'Light mode' : 'Dark mode'}

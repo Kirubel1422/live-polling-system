@@ -1,1 +1,10 @@
-export interface ITemplate extends Record<string, string> {}
+import { Slide } from "./presentation";
+
+export interface ITemplate {
+  id: string;
+  title: string;
+  description: string;
+  thumbnail: string;
+  category: string;
+  slides?: Slide[];
+}
