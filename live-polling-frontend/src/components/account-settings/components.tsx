@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { HelpCircle, Moon, Sun, User, Bell, Globe, Mail } from 'lucide-react';
+import { HelpCircle, Moon, Sun, User, Bell, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,41 +8,215 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LANGUAGES } from './data.const';
 import type { AppearanceMode, UseAccountSettingsReturn } from './types';
+import { Camera } from 'lucide-react';
+import { getInitials } from '@/lib/utils';
+import { useGetMeQuery } from '@/api/auth.api';
+import { useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as yup from 'yup';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 
-export function NameSectionContent({
-  displayName,
-  setDisplayName,
-  onSave,
+const ProfileSchema = yup.object({
+  firstName: yup.string().required("First name is required"),
+  lastName: yup.string().required("Last name is required"),
+  email: yup.string().email("Invalid email address").required("Email is required"),
+});
+
+const PasswordSchema = yup.object({
+  currentPassword: yup.string(),
+  newPassword: yup.string().min(6, "Password must be at least 6 characters").required("New password is required"),
+});
+
+export function ProfileSectionContent({
+  firstName,
+  lastName,
+  email,
+  setFirstName,
+  setLastName,
+  setEmail,
+  provider,
+  avatarUrl,
+  onSaveProfile,
+  onUpdatePassword,
+  onUploadAvatar
 }: {
-  displayName: string;
-  setDisplayName: (v: string) => void;
-  onSave?: () => void;
+  firstName: string;
+  lastName: string;
+  email: string;
+  setFirstName: (v: string) => void;
+  setLastName: (v: string) => void;
+  setEmail: (v: string) => void;
+  provider?: string;
+  avatarUrl?: string;
+  onSaveProfile?: () => void;
+  onUpdatePassword?: (currentPass: string | undefined, newPass: string) => void;
+  onUploadAvatar?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }) {
+  const profileForm = useForm({
+    resolver: yupResolver(ProfileSchema),
+    values: {
+      firstName: firstName,
+      lastName: lastName || "",
+      email: email
+    },
+  });
+
+  const passwordForm = useForm({
+    resolver: yupResolver(PasswordSchema),
+    defaultValues: {
+      currentPassword: "",
+      newPassword: "",
+    },
+  });
+
+  const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (localAvatarUrl) URL.revokeObjectURL(localAvatarUrl);
+    };
+  }, [localAvatarUrl]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setLocalAvatarUrl(url);
+    }
+    if (onUploadAvatar) onUploadAvatar(e);
+  };
+
   return (
-    <div className="flex flex-col gap-5">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-        <Avatar className="size-16 ring-2 ring-primary/20 ring-offset-2">
-          <AvatarImage src="https://github.com/shadcn.png" alt="Avatar" />
-          <AvatarFallback className="text-lg bg-primary/10 text-primary">
-            {displayName.slice(0, 2).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex-1 space-y-2">
-          <Label htmlFor="display-name" className="text-sm font-medium">Display name</Label>
-          <Input
-            id="display-name"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="Your name"
-            className="max-w-sm"
-          />
-        </div>
-      </div>
-      <div className="flex">
-        <Button size="sm" onClick={onSave} className="px-5">
-          Save changes
-        </Button>
-      </div>
+    <div className="flex flex-col gap-8">
+      {/* Profile Info */}
+      <Form {...profileForm}>
+        <form onSubmit={profileForm.handleSubmit((data) => {
+          setFirstName(data.firstName);
+          setLastName(data.lastName);
+          setEmail(data.email);
+          // Wait for state to apply
+          setTimeout(() => onSaveProfile?.(), 0);
+        })} className="flex flex-col gap-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+            <div className="relative group cursor-pointer shrink-0 mt-2">
+              <Avatar className="size-20 ring-2 ring-primary/20 ring-offset-2">
+                <AvatarImage src={localAvatarUrl || avatarUrl || ""} alt="Avatar" />
+                <AvatarFallback className="text-xl bg-primary/10 text-primary">
+                  {getInitials(`${firstName} ${lastName}`)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Camera className="size-6 text-white" />
+              </div>
+              <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleFileChange} />
+            </div>
+            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField
+                control={profileForm.control}
+                name="firstName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>First name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="John" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={profileForm.control}
+                name="lastName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Last name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Doe" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="sm:col-span-2">
+                <FormField
+                  control={profileForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email address</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="john.doe@example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+          </div>
+          <div className="flex">
+            <Button type="submit" size="sm" className="px-5">
+              Save changes
+            </Button>
+          </div>
+        </form>
+      </Form>
+
+      <div className="w-full border-t border-border/50"></div>
+
+      {/* Password Reset */}
+      <Form {...passwordForm}>
+        <form onSubmit={passwordForm.handleSubmit((data) => {
+          if (onUpdatePassword) {
+            onUpdatePassword(provider === 'local' ? data.currentPassword : undefined, data.newPassword);
+            passwordForm.reset();
+          }
+        })} className="flex flex-col gap-4">
+          <h3 className="text-sm font-medium">Change Password</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl">
+            {provider === 'local' && (
+              <FormField
+                control={passwordForm.control}
+                name="currentPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Current password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="••••••••" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+            <FormField
+              control={passwordForm.control}
+              name="newPassword"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>New password</FormLabel>
+                  <FormControl>
+                    <Input type="password" placeholder="••••••••" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          <div className="flex">
+            <Button type="submit" size="sm" variant="secondary" className="px-5">
+              Update password
+            </Button>
+          </div>
+        </form>
+      </Form>
     </div>
   );
 }
@@ -147,7 +321,7 @@ function SectionCard({ icon, title, badge, children }: SectionCardProps) {
           {badge && (
             <Badge
               variant={badge === 'Verified' ? 'secondary' : 'default'}
-              className="text-xs"
+              className="text-xs dark:!text-black"
             >
               {badge}
             </Badge>
@@ -159,28 +333,91 @@ function SectionCard({ icon, title, badge, children }: SectionCardProps) {
   );
 }
 
+import { useUpdateProfileMutation, useUpdatePasswordMutation, useUploadAvatarMutation, useUpdateNotificationsMutation } from '@/api/user.api';
+import { toast } from 'sonner';
+import { useEffect, useState } from 'react';
+
 export function SettingsContent({ state }: { state: UseAccountSettingsReturn }) {
+  const { data: user } = useGetMeQuery();
+  const [updateProfile] = useUpdateProfileMutation();
+  const [updatePassword] = useUpdatePasswordMutation();
+  const [uploadAvatar] = useUploadAvatarMutation();
+  const [updateNotifications] = useUpdateNotificationsMutation();
+
+  const handleSaveProfile = async () => {
+    try {
+      await updateProfile({
+        firstName: state.firstName,
+        lastName: state.lastName,
+        email: state.email,
+      }).unwrap();
+      toast.success('Profile updated successfully');
+    } catch (e: any) {
+      toast.error(e?.data?.message || 'Failed to update profile');
+    }
+  };
+
+  const handleUpdatePassword = async (currentPass: string | undefined, newPass: string) => {
+    if (!newPass) {
+      toast.error('New password is required');
+      return;
+    }
+    try {
+      await updatePassword({
+        currentPassword: currentPass,
+        newPassword: newPass,
+      }).unwrap();
+      toast.success('Password updated successfully');
+    } catch (e: any) {
+      toast.error(e?.data?.message || 'Failed to update password');
+    }
+  };
+
+  const handleUploadAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('avatar', file);
+    try {
+      await uploadAvatar(formData).unwrap();
+      toast.success('Avatar uploaded successfully');
+    } catch (err: any) {
+      toast.error(err?.data?.message || 'Failed to upload avatar');
+    }
+  };
+
+  const handleToggleNotifications = async (checked: boolean) => {
+    state.setEmailNotifications(checked);
+    try {
+      await updateNotifications({ enabled: checked }).unwrap();
+      toast.success('Notifications settings updated');
+    } catch (e: any) {
+      toast.error('Failed to update notifications');
+      state.setEmailNotifications(!checked); // revert
+    }
+  };
+
   return (
     <main className="min-w-0 flex-1 space-y-4">
       <h1 className="mb-6 text-2xl font-semibold">Account settings</h1>
 
       <SectionCard
         icon={<div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10"><User className="size-4 text-primary" /></div>}
-        title="Name & image"
+        title="Profile & Security"
       >
-        <NameSectionContent
-          displayName={state.displayName}
-          setDisplayName={state.setDisplayName}
-          onSave={() => console.log('Save:', state.displayName)}
+        <ProfileSectionContent
+          firstName={state.firstName}
+          lastName={state.lastName}
+          email={state.email}
+          setFirstName={state.setFirstName}
+          setLastName={state.setLastName}
+          setEmail={state.setEmail}
+          provider={state.provider}
+          avatarUrl={user?.avatarUrl}
+          onSaveProfile={handleSaveProfile}
+          onUpdatePassword={handleUpdatePassword}
+          onUploadAvatar={handleUploadAvatar}
         />
-      </SectionCard>
-
-      <SectionCard
-        icon={<div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-950"><Mail className="size-4 text-blue-500" /></div>}
-        title="Email"
-        badge={state.emailVerified ? 'Verified' : undefined}
-      >
-        <p className="text-sm text-muted-foreground">{state.email}</p>
       </SectionCard>
 
       <SectionCard
@@ -189,7 +426,7 @@ export function SettingsContent({ state }: { state: UseAccountSettingsReturn }) 
       >
         <NotificationsSectionContent
           emailNotifications={state.emailNotifications}
-          setEmailNotifications={state.setEmailNotifications}
+          setEmailNotifications={handleToggleNotifications}
         />
       </SectionCard>
 

@@ -3,16 +3,20 @@ export type SectionId = 'name' | 'email' | 'notifications' | 'appearance' | 'lan
 export type AppearanceMode = 'light' | 'dark';
 
 export interface AccountSettingsState {
-  displayName: string;
+  firstName: string;
+  lastName: string;
   email: string;
   emailVerified: boolean;
   emailNotifications: boolean;
   appearance: AppearanceMode;
   language: string;
+  provider?: string;
 }
 
 export interface UseAccountSettingsReturn extends AccountSettingsState {
-  setDisplayName: (name: string) => void;
+  setFirstName: (name: string) => void;
+  setLastName: (name: string) => void;
+  setEmail: (email: string) => void;
   setEmailNotifications: (enabled: boolean) => void;
   setAppearance: (mode: AppearanceMode) => void;
   setLanguage: (lang: string) => void;

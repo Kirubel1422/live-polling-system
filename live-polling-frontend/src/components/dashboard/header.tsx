@@ -5,7 +5,7 @@ import {
   Search,
   Sun,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import {
@@ -18,6 +18,11 @@ import {
 } from '../ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { useTheme } from '@/lib/useTheme';
+import { useLogoutMutation, useGetMeQuery } from '@/api/auth.api';
+import { useDispatch } from 'react-redux';
+import { toast } from 'sonner';
+import authApi from '@/api/auth.api';
+import { getInitials } from '@/lib/utils';
 
 export default function DashboardHeader({
   searchQuery,
@@ -27,6 +32,22 @@ export default function DashboardHeader({
   setSearchQuery: (value: string) => void;
 }) {
   const { theme, toggleTheme } = useTheme();
+  const { data: user } = useGetMeQuery();
+  const [logout, { isLoading: isLoggingOut }] = useLogoutMutation();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const handleSignOut = async () => {
+    try {
+      await logout().unwrap();
+      // Reset the auth API state to immediately clear cached user profiles/auth state
+      dispatch(authApi.util.resetApiState());
+      toast.success('Successfully signed out!');
+      navigate('/start');
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to sign out. Please try again.');
+    }
+  };
 
   return (
     <header className="bg-background/95 mt-4 backdrop-blur">
@@ -54,34 +75,28 @@ export default function DashboardHeader({
             <DropdownMenuTrigger>
               <Button variant="ghost" size="icon" className="rounded-full">
                 <Avatar>
-                  <AvatarImage src="https://github.com/shadcn.png" alt="shadcn" />
-                  <AvatarFallback>LR</AvatarFallback>
+                  <AvatarImage src={user?.avatarUrl || ""} alt={user?.displayName || "User"} />
+                  <AvatarFallback className="text-sm bg-primary/10 text-primary dark:hover:!text-black dark:active:!text-black">
+                    {getInitials(user?.displayName)}
+                  </AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="z-50 w-48">
               <DropdownMenuGroup>
                 <DropdownMenuItem asChild>
-                  <Link to="/account">
+                  <Link to="/account" className="dark:hover:!text-black">
                     <BadgeCheckIcon />
                     Account
                   </Link>
                 </DropdownMenuItem>
-                {/* <DropdownMenuItem>
-                  <CreditCardIcon />
-                  Billing
-                </DropdownMenuItem> */}
-                {/* <DropdownMenuItem>
-                  <BellIcon />
-                  Notifications
-                </DropdownMenuItem> */}
-                <DropdownMenuItem onClick={toggleTheme}>
+                <DropdownMenuItem onClick={toggleTheme} className="dark:hover:!text-black">
                   {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
                   {theme === 'dark' ? 'Light mode' : 'Dark mode'}
                 </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem className="dark:hover:!text-black" onClick={handleSignOut} disabled={isLoggingOut}>
                 <LogOutIcon />
                 Sign Out
               </DropdownMenuItem>

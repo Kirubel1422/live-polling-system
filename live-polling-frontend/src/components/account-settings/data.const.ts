@@ -1,4 +1,4 @@
-export const LANGUAGES = ['English', 'Spanish', 'French', 'German'] as const;
+export const LANGUAGES = ['English', 'Arabic', 'Hindi'] as const;
 
 export const DEFAULT_DISPLAY_NAME = 'Logged in user';
 export const DEFAULT_EMAIL = 'kirubeltekle9@gmail.com';
