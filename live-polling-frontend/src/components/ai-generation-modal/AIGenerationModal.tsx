@@ -46,7 +46,7 @@ export default function AIGenerationModal({ open, onOpenChange }: AIGenerationMo
 
         <Separator orientation="vertical" className="bg-gray-200" />
 
-        <RightPanel isThinking={isThinking} />
+        <RightPanel isThinking={isThinking} thinkingText={thinkingText} />
       </DialogContent>
     </Dialog>
   );

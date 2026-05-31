@@ -34,7 +34,25 @@ export function ChatBubble({ msg }: { msg: ChatMessage }) {
   );
 }
 
+function extractReadableThoughts(rawText: string) {
+  if (!rawText) return [];
+  // Remove JSON keys like "title": 
+  let text = rawText.replace(/"[a-zA-Z0-9_]+"\s*:\s*/g, '');
+  // Replace structural characters with newlines
+  text = text.replace(/[{}\[\]",]/g, '\n');
+  // Handle literal encoded newlines
+  text = text.replace(/\\n/g, '\n');
+  
+  // Split, trim, filter empty lines
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0 && l !== "true" && l !== "false" && l !== "null");
+  
+  // Return the last 4 lines
+  return lines.slice(-4);
+}
+
 export function ThinkingBubble({ text }: { text: string }) {
+  const displayLines = extractReadableThoughts(text);
+
   return (
     <div className="flex items-start gap-2">
       <img
@@ -42,8 +60,20 @@ export function ThinkingBubble({ text }: { text: string }) {
         alt="AI"
         className="size-6 rounded-full object-contain flex-shrink-0 mt-0.5 bg-muted p-0.5"
       />
-      <div className="rounded-2xl rounded-bl-sm bg-neutral-200 px-3.5 py-2 text-xs text-neutral-500">
-        {text}
+      <div className="rounded-2xl rounded-bl-sm bg-neutral-200 px-3.5 py-2 text-xs text-neutral-500 overflow-hidden">
+        {displayLines.length > 0 ? (
+          displayLines.map((line, idx) => (
+            <div key={idx} className="min-h-[1.2rem] flex items-center">
+              {idx === displayLines.length - 1 ? (
+                <span className="animate-pulse">{line}</span>
+              ) : (
+                <span className="opacity-70">{line}</span>
+              )}
+            </div>
+          ))
+        ) : (
+          <span className="animate-pulse">Thinking...</span>
+        )}
       </div>
     </div>
   );
@@ -197,7 +227,7 @@ export function IdlePreview() {
   );
 }
 
-export function GeneratingPreview({ factText, factKey }: { factText: string; factKey: string }) {
+export function GeneratingPreview({ factLines, factKey, isReasoning = false }: { factLines: string[]; factKey: string; isReasoning?: boolean }) {
   return (
     <>
       <Lottie
@@ -207,28 +237,45 @@ export function GeneratingPreview({ factText, factKey }: { factText: string; fac
         style={{ width: 400, height: 400 }}
         className="mx-auto"
       />
-      <div className="flex justify-center mt-12 overflow-hidden px-8">
-        <p
-          key={factKey}
-          className="text-xs text-primary font-medium text-center inline-block whitespace-nowrap w-0 overflow-hidden animate-[typing_2.5s_steps(45,end)_forwards]"
-        >
-          {factText}
-        </p>
+      <div className="flex justify-center -mt-4 overflow-hidden px-8 w-full max-w-lg mx-auto h-24">
+        {isReasoning ? (
+          <div className="text-sm   text-primary/60 text-center w-full opacity-80 flex flex-col items-center justify-start gap-1">
+            {factLines.map((line, idx) => (
+              <p key={idx} className="truncate w-full max-w-full">
+                {idx === factLines.length - 1 ? (
+                  <><span className="opacity-100">{line}</span><span className="animate-pulse">_</span></>
+                ) : (
+                  <span className="opacity-70">{line}</span>
+                )}
+              </p>
+            ))}
+          </div>
+        ) : (
+          <p
+            key={factKey}
+            className="text-md text-primary font-medium text-center inline-block whitespace-nowrap w-0 overflow-hidden animate-[typing_2.5s_steps(45,end)_forwards]"
+          >
+            {factLines[0]}
+          </p>
+        )}
       </div>
     </>
   );
 }
 
-export function RightPanel({ isThinking }: { isThinking: boolean }) {
+export function RightPanel({ isThinking, thinkingText = "" }: { isThinking: boolean; thinkingText?: string }) {
   const loadingFact = useLoadingFact(isThinking);
 
+  const isReasoning = Boolean(thinkingText && thinkingText !== 'Thinking ...');
+  const displayLines = isReasoning ? extractReadableThoughts(thinkingText) : [loadingFact];
+
   return (
-    <div className="flex-1 flex items-center justify-center">
-      <div>
+    <div className="flex-1 flex items-center justify-center w-full">
+      <div className="w-full">
         {!isThinking ? (
           <IdlePreview />
         ) : (
-          <GeneratingPreview factText={loadingFact} factKey={loadingFact} />
+          <GeneratingPreview factLines={displayLines} factKey={isReasoning ? 'reasoning' : loadingFact} isReasoning={isReasoning} />
         )}
       </div>
     </div>

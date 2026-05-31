@@ -12,9 +12,9 @@ import {
 } from './data.const';
 import { useNavigate } from 'react-router-dom';
 import type { ChatMessage, AIModalActions } from './types';
-import { useGeneratePresentationMutation } from '@/api/presentations.api';
 import { useAppDispatch } from '@/store/hooks';
 import { addPresentation } from '@/store/presentationsSlice';
+import { ENV } from '@/config/env';
 import {
   DEFAULT_THEME,
   type Slide,
@@ -173,9 +173,8 @@ export function useAIModalState(actions: AIModalActions) {
   const [generatedSlides, setGeneratedSlides] = useState<Slide[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isThinking, setIsThinking] = useState(false);
-  const thinkingText = 'Thinking ...';
+  const [thinkingText, setThinkingText] = useState('Thinking ...');
 
-  const [generatePresentation] = useGeneratePresentationMutation();
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
@@ -198,7 +197,61 @@ export function useAIModalState(actions: AIModalActions) {
     }, 1000);
 
     try {
-      const presentation = await generatePresentation({ prompt: userMessage }).unwrap();
+      const response = await fetch(`${ENV.API_URL}/presentations/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ prompt: userMessage }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate presentation');
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let currentReasoning = "";
+      let presentation = null;
+
+      if (reader) {
+        let buffer = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          buffer += chunk;
+
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed) continue;
+            if (trimmed.startsWith("data: ")) {
+              try {
+                const data = JSON.parse(trimmed.substring(6));
+                if (data.type === "reasoning") {
+                  currentReasoning += data.text;
+                  setThinkingText(currentReasoning);
+                } else if (data.type === "presentation") {
+                  presentation = data.data;
+                } else if (data.type === "error") {
+                  throw new Error(data.message);
+                }
+              } catch (e) {
+                // Ignore incomplete JSON chunks
+              }
+            }
+          }
+        }
+      }
+
+      if (!presentation) {
+        throw new Error('No presentation data received');
+      }
+
       clearInterval(interval);
       actions.onDispatchProgress(100);
 
