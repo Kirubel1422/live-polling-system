@@ -1,7 +1,7 @@
 import { useRegisterMutation } from "@/api/auth.api";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { RegisterDto } from "@/validators/auth.validator";
+import { type RegisterDto } from "@/validators/auth.validator";
 
 export const useRegister = () => {
   const [register, { isLoading }] = useRegisterMutation();

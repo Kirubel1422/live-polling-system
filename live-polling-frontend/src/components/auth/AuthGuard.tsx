@@ -14,7 +14,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   if (error || !user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/start" state={{ from: location }} replace />;
   }
 
   return <>{children}</>;

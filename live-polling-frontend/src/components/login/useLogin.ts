@@ -1,7 +1,7 @@
 import { useLoginMutation } from "@/api/auth.api";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { LoginDto } from "@/validators/auth.validator";
+import { type LoginDto } from "@/validators/auth.validator";
 
 export const useLogin = () => {
   const [login, { isLoading }] = useLoginMutation();
