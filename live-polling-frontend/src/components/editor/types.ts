@@ -1,4 +1,4 @@
-import { Slide } from "@/types/presentation";
+import { type Slide } from "@/types/presentation";
 
 // From SlideCanvas.tsx
 export type ThumbnailSize = false | "list" | "card";

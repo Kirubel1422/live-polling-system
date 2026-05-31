@@ -1,19 +1,21 @@
 import {
-  Slide,
-  MultipleChoiceSlide,
-  OpenEndedSlide,
-  ContentSlide,
-  WordCloudSlide,
-  RatingSlide,
-  RankingSlide,
-  ScalesSlide,
-  QASlide,
-  PointsSlide,
-  WheelSlide,
+  type Slide,
+  type MultipleChoiceSlide,
+  type OpenEndedSlide,
+  type ContentSlide,
+  type WordCloudSlide,
+  type RatingSlide,
+  type RankingSlide,
+  type ScalesSlide,
+  type QASlide,
+  type PointsSlide,
+  type WheelSlide,
+  type NumberSlide,
+  type QuizSlide,
 } from "@/types/presentation";
 import { cn } from "@/lib/utils";
 import { Star, ThumbsUp } from "lucide-react";
-import { SlideCanvasProps, ThumbnailSize } from "./types";
+import { type SlideCanvasProps, type ThumbnailSize } from "./types";
 import {
   WORD_CLOUD_SAMPLE_WORDS,
   QA_SAMPLE_QUESTIONS,
@@ -22,6 +24,8 @@ import {
 import { InlineTextEdit } from "./InlineTextEdit";
 import { useAppDispatch } from "@/store/hooks";
 import { updateSlide } from "@/store/presentationsSlice";
+
+export type SlideResponses = Record<string, any[]>;
 
 export default function SlideCanvas({
   slide,
@@ -36,7 +40,7 @@ export default function SlideCanvas({
   }
 
   return (
-    <div className="flex flex-1 items-start justify-top p-8">
+    <div className="flex flex-1 items-start justify-top p-8 dark:bg-slate-900 dark:rounded-xl">
       <div
         className="aspect-video w-full max-w-6xl  border-md shadow-xs rounded-2xl overflow-hidden"
         style={{ backgroundColor: slide.theme.backgroundColor }}
@@ -53,6 +57,8 @@ export function renderSlideContent(
   slide: Slide,
   thumbnailSize: ThumbnailSize,
   presentationId?: string,
+  isPreview: boolean = false,
+  responses: any[] = []
 ) {
   switch (slide.type) {
     case "multiple-choice":
@@ -61,6 +67,8 @@ export function renderSlideContent(
           thumbnailSize={thumbnailSize}
           slide={slide}
           presentationId={presentationId}
+          isPreview={isPreview}
+          responses={responses}
         />
       );
     case "open-ended":
@@ -69,6 +77,7 @@ export function renderSlideContent(
           thumbnailSize={thumbnailSize}
           slide={slide}
           presentationId={presentationId}
+          isPreview={isPreview}
         />
       );
     case "content":
@@ -77,14 +86,18 @@ export function renderSlideContent(
           thumbnailSize={thumbnailSize}
           slide={slide}
           presentationId={presentationId}
+          isPreview={isPreview}
         />
       );
     case "word-cloud":
+      console.log("[renderSlideContent] word-cloud case received responses:", responses);
       return (
         <WordCloudContent
           thumbnailSize={thumbnailSize}
-          slide={slide}
+          slide={slide as any}
           presentationId={presentationId}
+          isPreview={isPreview}
+          responses={responses}
         />
       );
     case "rating":
@@ -93,6 +106,7 @@ export function renderSlideContent(
           thumbnailSize={thumbnailSize}
           slide={slide}
           presentationId={presentationId}
+          isPreview={isPreview}
         />
       );
     case "ranking":
@@ -101,6 +115,7 @@ export function renderSlideContent(
           thumbnailSize={thumbnailSize}
           slide={slide}
           presentationId={presentationId}
+          isPreview={isPreview}
         />
       );
     case "scales":
@@ -109,6 +124,7 @@ export function renderSlideContent(
           thumbnailSize={thumbnailSize}
           slide={slide}
           presentationId={presentationId}
+          isPreview={isPreview}
         />
       );
     case "qa":
@@ -117,6 +133,7 @@ export function renderSlideContent(
           thumbnailSize={thumbnailSize}
           slide={slide}
           presentationId={presentationId}
+          isPreview={isPreview}
         />
       );
     case "100-points":
@@ -125,6 +142,7 @@ export function renderSlideContent(
           thumbnailSize={thumbnailSize}
           slide={slide}
           presentationId={presentationId}
+          isPreview={isPreview}
         />
       );
     case "wheel-of-names":
@@ -133,6 +151,26 @@ export function renderSlideContent(
           thumbnailSize={thumbnailSize}
           slide={slide}
           presentationId={presentationId}
+          isPreview={isPreview}
+        />
+      );
+    case "number":
+      return (
+        <NumberContent
+          thumbnailSize={thumbnailSize}
+          slide={slide as any}
+          presentationId={presentationId}
+          isPreview={isPreview}
+        />
+      );
+    case "quiz":
+      return (
+        <QuizContent
+          thumbnailSize={thumbnailSize}
+          slide={slide as any}
+          presentationId={presentationId}
+          isPreview={isPreview}
+          responses={responses}
         />
       );
     default:
@@ -141,6 +179,7 @@ export function renderSlideContent(
           thumbnailSize={thumbnailSize}
           slide={slide}
           presentationId={presentationId}
+          isPreview={isPreview}
         />
       );
   }
@@ -150,17 +189,21 @@ function MultipleChoiceContent({
   slide,
   thumbnailSize,
   presentationId,
+  isPreview,
+  responses,
 }: {
-  thumbnailSize?: ThumbnailSize;
+  thumbnailSize?: ThumbnailSize | undefined;
   slide: MultipleChoiceSlide;
-  presentationId?: string;
+  presentationId?: string | undefined;
+  isPreview?: boolean | undefined;
+  responses?: any[] | undefined;
 }) {
   const dispatch = useAppDispatch();
   const isThumbnail = thumbnailSize !== false;
   const isCard = thumbnailSize === "card";
 
   const handleUpdate = (updates: Partial<Slide>) => {
-    if (presentationId && !isThumbnail) {
+    if (presentationId && (!isThumbnail && !isPreview)) {
       dispatch(updateSlide({ presentationId, slideId: slide.id, updates }));
     }
   };
@@ -225,22 +268,27 @@ function MultipleChoiceContent({
       </div>
     );
   }
+  
+  const totalResponses = responses?.length || 0;
+  const counts: Record<string, number> = {};
+  responses?.forEach((r: any) => { counts[r] = (counts[r] || 0) + 1; });
+
   return (
     <div className="flex h-full w-full flex-col">
       <div className="mb-8 text-center w-full">
         <InlineTextEdit
           text={slide.title || ""}
           placeholder="Your question here"
-          isEditable={!isThumbnail}
+          isEditable={(!isThumbnail && !isPreview)}
           onUpdate={(title) => handleUpdate({ title })}
           className="text-3xl font-bold mb-2 block w-full max-w-4xl mx-auto"
           style={{ color: slide.theme.textColor }}
         />
-        {(slide.subtitle || !isThumbnail) && (
+        {(slide.subtitle || (!isThumbnail && !isPreview)) && (
           <InlineTextEdit
             text={slide.subtitle || ""}
             placeholder="Add a subtitle..."
-            isEditable={!isThumbnail}
+            isEditable={(!isThumbnail && !isPreview)}
             onUpdate={(subtitle) => handleUpdate({ subtitle })}
             className="text-lg opacity-70 block w-full max-w-3xl mx-auto"
             style={{ color: slide.theme.textColor }}
@@ -248,20 +296,51 @@ function MultipleChoiceContent({
         )}
       </div>
       <div className="grid flex-1 grid-cols-2 gap-4">
-        {slide.options.map((option, index) => (
-          <button
-            key={option.id}
-            className={cn(
-              "flex items-center justify-center rounded-xl p-6 text-lg font-medium text-white transition-transform hover:scale-[1.02]",
-            )}
-            style={{ backgroundColor: option.color || slide.theme.accentColor }}
-          >
-            <span className="mr-3 flex size-8 items-center justify-center rounded-full bg-white/20 text-sm">
-              {String.fromCharCode(65 + index)}
-            </span>
-            {option.text}
-          </button>
-        ))}
+        {slide.options.map((option, index) => {
+          const count = counts[option.id] || 0;
+          const percentage = totalResponses > 0 ? Math.round((count / totalResponses) * 100) : 0;
+          
+          return (
+            <div
+              key={option.id}
+              className={cn(
+                "relative flex items-center justify-start rounded-xl font-medium text-white transition-transform overflow-hidden",
+                isPreview ? "p-4 text-base" : "p-6 text-lg"
+              )}
+              style={{ backgroundColor: "rgba(255,255,255,0.1)" }}
+            >
+              <div 
+                className="absolute inset-0 z-0 transition-all duration-500 ease-in-out" 
+                style={{ 
+                  backgroundColor: option.color || slide.theme.accentColor,
+                  width: totalResponses > 0 ? `${percentage}%` : '100%',
+                  opacity: totalResponses > 0 ? 1 : 0.8
+                }} 
+              />
+              <div className="relative z-10 flex items-center w-full">
+                <span className="mr-3 flex size-8 shrink-0 items-center justify-center rounded-full bg-white/20 text-sm">
+                  {String.fromCharCode(65 + index)}
+                </span>
+                <InlineTextEdit
+                  text={option.text || ""}
+                  placeholder={`Option ${index + 1}`}
+                  isEditable={(!isThumbnail && !isPreview)}
+                  onUpdate={(newText) => {
+                    const newOptions = slide.options.map(o => o.id === option.id ? { ...o, text: newText } : o);
+                    handleUpdate({ options: newOptions });
+                  }}
+                  className="flex-1 w-full text-left"
+                />
+                {totalResponses > 0 && (
+                  <div className="ml-4 flex items-center gap-2">
+                    <span className="text-xl font-bold">{count}</span>
+                    <span className="text-sm opacity-70">({percentage}%)</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -271,17 +350,19 @@ function OpenEndedContent({
   slide,
   thumbnailSize,
   presentationId,
+  isPreview,
 }: {
-  thumbnailSize?: ThumbnailSize;
+  thumbnailSize?: ThumbnailSize | undefined;
   slide: OpenEndedSlide;
-  presentationId?: string;
+  presentationId?: string | undefined;
+  isPreview?: boolean | undefined;
 }) {
   const dispatch = useAppDispatch();
   const isThumbnail = thumbnailSize !== false;
   const isCard = thumbnailSize === "card";
 
   const handleUpdate = (updates: Partial<Slide>) => {
-    if (presentationId && !isThumbnail) {
+    if (presentationId && (!isThumbnail && !isPreview)) {
       dispatch(updateSlide({ presentationId, slideId: slide.id, updates }));
     }
   };
@@ -331,16 +412,16 @@ function OpenEndedContent({
       <InlineTextEdit
         text={slide.title || ""}
         placeholder="Your question here"
-        isEditable={!isThumbnail}
+        isEditable={(!isThumbnail && !isPreview)}
         onUpdate={(title) => handleUpdate({ title })}
         className="text-3xl font-bold mb-4 text-center block w-full max-w-4xl"
         style={{ color: slide.theme.textColor }}
       />
-      {(slide.subtitle || !isThumbnail) && (
+      {(slide.subtitle || (!isThumbnail && !isPreview)) && (
         <InlineTextEdit
           text={slide.subtitle || ""}
           placeholder="Add a subtitle..."
-          isEditable={!isThumbnail}
+          isEditable={(!isThumbnail && !isPreview)}
           onUpdate={(subtitle) => handleUpdate({ subtitle })}
           className="text-lg mb-8 opacity-70 block w-full max-w-3xl text-center"
           style={{ color: slide.theme.textColor }}
@@ -362,17 +443,19 @@ function ContentContent({
   slide,
   thumbnailSize,
   presentationId,
+  isPreview,
 }: {
-  thumbnailSize?: ThumbnailSize;
+  thumbnailSize?: ThumbnailSize | undefined;
   slide: ContentSlide;
-  presentationId?: string;
+  presentationId?: string | undefined;
+  isPreview?: boolean | undefined;
 }) {
   const dispatch = useAppDispatch();
   const isThumbnail = thumbnailSize !== false;
   const isCard = thumbnailSize === "card";
 
   const handleUpdate = (updates: Partial<Slide>) => {
-    if (presentationId && !isThumbnail) {
+    if (presentationId && (!isThumbnail && !isPreview)) {
       dispatch(updateSlide({ presentationId, slideId: slide.id, updates }));
     }
   };
@@ -420,26 +503,26 @@ function ContentContent({
       <InlineTextEdit
         text={slide.title || ""}
         placeholder="Slide Title"
-        isEditable={!isThumbnail}
+        isEditable={(!isThumbnail && !isPreview)}
         onUpdate={(title) => handleUpdate({ title })}
         className="text-4xl font-bold mb-4 block w-full max-w-4xl"
         style={{ color: slide.theme.textColor }}
       />
-      {(slide.subtitle || !isThumbnail) && (
+      {(slide.subtitle || (!isThumbnail && !isPreview)) && (
         <InlineTextEdit
           text={slide.subtitle || ""}
           placeholder="Add a subtitle..."
-          isEditable={!isThumbnail}
+          isEditable={(!isThumbnail && !isPreview)}
           onUpdate={(subtitle) => handleUpdate({ subtitle })}
           className="text-xl mb-6 opacity-70 block w-full max-w-3xl"
           style={{ color: slide.theme.textColor }}
         />
       )}
-      {(slide.content || !isThumbnail) && (
+      {(slide.content || (!isThumbnail && !isPreview)) && (
         <InlineTextEdit
           text={slide.content || ""}
           placeholder="Add body content..."
-          isEditable={!isThumbnail}
+          isEditable={(!isThumbnail && !isPreview)}
           onUpdate={(content) => handleUpdate({ content })}
           className="text-lg max-w-2xl opacity-80 block w-full"
           style={{ color: slide.theme.textColor }}
@@ -453,18 +536,23 @@ function WordCloudContent({
   slide,
   thumbnailSize,
   presentationId,
+  isPreview,
+  responses = [],
 }: {
-  thumbnailSize?: ThumbnailSize;
+  thumbnailSize?: ThumbnailSize | undefined;
   slide: WordCloudSlide;
-  presentationId?: string;
+  presentationId?: string | undefined;
+  isPreview?: boolean | undefined;
+  responses?: any[] | undefined;
 }) {
+  console.log("[WordCloudContent] function called with responses:", responses);
   const dispatch = useAppDispatch();
   const isThumbnail = thumbnailSize !== false;
   const isCard = thumbnailSize === "card";
   const sampleWords = WORD_CLOUD_SAMPLE_WORDS;
 
   const handleUpdate = (updates: Partial<Slide>) => {
-    if (presentationId && !isThumbnail) {
+    if (presentationId && (!isThumbnail && !isPreview)) {
       dispatch(updateSlide({ presentationId, slideId: slide.id, updates }));
     }
   };
@@ -526,35 +614,53 @@ function WordCloudContent({
       <InlineTextEdit
         text={slide.title || ""}
         placeholder="What comes to mind?"
-        isEditable={!isThumbnail}
+        isEditable={(!isThumbnail && !isPreview)}
         onUpdate={(title) => handleUpdate({ title })}
         className="text-3xl font-bold mb-4 text-center block w-full max-w-4xl"
         style={{ color: slide.theme.textColor }}
       />
-      {(slide.subtitle || !isThumbnail) && (
+      {(slide.subtitle || (!isThumbnail && !isPreview)) && (
         <InlineTextEdit
           text={slide.subtitle || ""}
           placeholder="Add a subtitle..."
-          isEditable={!isThumbnail}
+          isEditable={(!isThumbnail && !isPreview)}
           onUpdate={(subtitle) => handleUpdate({ subtitle })}
           className="text-lg mb-8 opacity-70 block w-full max-w-3xl text-center"
           style={{ color: slide.theme.textColor }}
         />
       )}
       <div className="flex flex-wrap items-center justify-center gap-4 max-w-2xl">
-        {sampleWords.map((word, i) => (
-          <span
-            key={i}
-            className="transition-all"
-            style={{
-              color: slide.theme.accentColor,
-              fontSize: `${1.5 + Math.random() * 1.5}rem`,
-              opacity: 0.5 + Math.random() * 0.5,
-            }}
-          >
-            {word}
-          </span>
-        ))}
+        {responses?.length > 0 ? (
+          responses.flatMap(r => Array.isArray(r) ? r : String(r).split(',').map(s => s.trim())).filter(w => w.length > 0).map((word, i) => (
+            <span
+              key={i}
+              className="transition-all"
+              style={{
+                color: slide.theme.accentColor,
+                fontSize: `${1.5 + Math.random() * 1.5}rem`,
+                opacity: 0.5 + Math.random() * 0.5,
+              }}
+            >
+              {word}
+            </span>
+          ))
+        ) : isPreview ? (
+          <div className="text-xl font-medium opacity-50" style={{ color: slide.theme.textColor }}>Waiting for responses...</div>
+        ) : (
+          sampleWords.map((word, i) => (
+            <span
+              key={i}
+              className="transition-all"
+              style={{
+                color: slide.theme.accentColor,
+                fontSize: `${1.5 + Math.random() * 1.5}rem`,
+                opacity: 0.5 + Math.random() * 0.5,
+              }}
+            >
+              {word}
+            </span>
+          ))
+        )}
       </div>
       <p className="mt-8 text-sm text-muted-foreground">
         Enter up to {slide.maxWords || 3} words
@@ -567,26 +673,35 @@ function RatingContent({
   slide,
   thumbnailSize,
   presentationId,
+  isPreview,
 }: {
-  thumbnailSize?: ThumbnailSize;
+  thumbnailSize?: ThumbnailSize | undefined;
   slide: RatingSlide;
-  presentationId?: string;
+  presentationId?: string | undefined;
+  isPreview?: boolean | undefined;
 }) {
   const dispatch = useAppDispatch();
   const isThumbnail = thumbnailSize !== false;
   const isCard = thumbnailSize === "card";
 
   const handleUpdate = (updates: Partial<Slide>) => {
-    if (presentationId && !isThumbnail) {
+    if (presentationId && (!isThumbnail && !isPreview)) {
       dispatch(updateSlide({ presentationId, slideId: slide.id, updates }));
     }
   };
   const renderRatingUI = () => {
-    switch (slide.ratingType) {
+    const meta = (slide as any).meta || {};
+    const ratingType = slide.ratingType || meta.ratingType || "stars";
+    const maxValue = slide.maxValue ?? meta.maxValue ?? 5;
+    const minValue = slide.minValue ?? meta.minValue ?? 1;
+    const maxLabel = slide.maxLabel || meta.maxLabel;
+    const minLabel = slide.minLabel || meta.minLabel;
+
+    switch (ratingType) {
       case "stars":
         return (
           <div className="flex gap-2">
-            {Array.from({ length: slide.maxValue }).map((_, i) => (
+            {Array.from({ length: maxValue }).map((_, i) => (
               <Star
                 key={i}
                 className="size-12 cursor-pointer transition-all hover:scale-110"
@@ -605,7 +720,7 @@ function RatingContent({
         const emojis = ["😡", "😕", "😐", "🙂", "😊"];
         return (
           <div className="flex gap-4">
-            {emojis.slice(0, slide.maxValue).map((emoji, i) => (
+            {emojis.slice(0, maxValue).map((emoji, i) => (
               <button
                 key={i}
                 className="text-4xl transition-transform hover:scale-125"
@@ -651,15 +766,15 @@ function RatingContent({
               className="flex justify-between mt-2 text-sm"
               style={{ color: slide.theme.textColor }}
             >
-              <span>{slide.minLabel || slide.minValue}</span>
-              <span>{slide.maxLabel || slide.maxValue}</span>
+              <span>{minLabel || minValue}</span>
+              <span>{maxLabel || maxValue}</span>
             </div>
           </div>
         );
       default:
         return (
           <div className="flex gap-2">
-            {Array.from({ length: slide.maxValue - slide.minValue + 1 }).map(
+            {Array.from({ length: maxValue - minValue + 1 }).map(
               (_, i) => (
                 <button
                   key={i}
@@ -672,7 +787,7 @@ function RatingContent({
                     color: i === 2 ? "#fff" : slide.theme.textColor,
                   }}
                 >
-                  {slide.minValue + i}
+                  {minValue + i}
                 </button>
               ),
             )}
@@ -710,8 +825,8 @@ function RatingContent({
         <div
           className={cn("mt-1 flex items-center", isCard ? "gap-1" : "gap-0.5")}
         >
-          {slide.ratingType === "stars" &&
-            Array.from({ length: Math.min(slide.maxValue, 5) }).map((_, i) => (
+          {((slide.ratingType || (slide as any).meta?.ratingType) === "stars") &&
+            Array.from({ length: Math.min(slide.maxValue ?? (slide as any).meta?.maxValue ?? 5, 5) }).map((_, i) => (
               <Star
                 key={i}
                 className={isCard ? "size-4" : "size-3"}
@@ -721,10 +836,10 @@ function RatingContent({
                 }}
               />
             ))}
-          {slide.ratingType === "emoji" && (
+          {((slide.ratingType || (slide as any).meta?.ratingType) === "emoji") && (
             <span className={isCard ? "text-xs" : "text-[10px]"}>😡 😐 😊</span>
           )}
-          {slide.ratingType === "nps" && (
+          {((slide.ratingType || (slide as any).meta?.ratingType) === "nps") && (
             <span
               className={cn(
                 "opacity-80",
@@ -735,13 +850,13 @@ function RatingContent({
               0–10 NPS
             </span>
           )}
-          {slide.ratingType === "slider" && (
+          {((slide.ratingType || (slide as any).meta?.ratingType) === "slider") && (
             <div
               className={cn("rounded-full", isCard ? "h-1.5 w-16" : "h-1 w-12")}
               style={{ backgroundColor: slide.theme.accentColor + "60" }}
             />
           )}
-          {!["stars", "emoji", "nps", "slider"].includes(slide.ratingType) && (
+          {!["stars", "emoji", "nps", "slider"].includes((slide.ratingType || (slide as any).meta?.ratingType)) && (
             <span
               className={cn(
                 "opacity-80",
@@ -749,7 +864,7 @@ function RatingContent({
               )}
               style={{ color: slide.theme.textColor }}
             >
-              {slide.minValue}–{slide.maxValue}
+              {(slide.minValue ?? (slide as any).meta?.minValue ?? 1)}–{(slide.maxValue ?? (slide as any).meta?.maxValue ?? 5)}
             </span>
           )}
         </div>
@@ -761,16 +876,16 @@ function RatingContent({
       <InlineTextEdit
         text={slide.title || ""}
         placeholder="Rating Question"
-        isEditable={!isThumbnail}
+        isEditable={(!isThumbnail && !isPreview)}
         onUpdate={(title) => handleUpdate({ title })}
         className="text-3xl font-bold mb-4 text-center block w-full max-w-4xl"
         style={{ color: slide.theme.textColor }}
       />
-      {(slide.subtitle || !isThumbnail) && (
+      {(slide.subtitle || (!isThumbnail && !isPreview)) && (
         <InlineTextEdit
           text={slide.subtitle || ""}
           placeholder="Add a subtitle..."
-          isEditable={!isThumbnail}
+          isEditable={(!isThumbnail && !isPreview)}
           onUpdate={(subtitle) => handleUpdate({ subtitle })}
           className="text-lg mb-8 opacity-70 block w-full max-w-3xl text-center"
           style={{ color: slide.theme.textColor }}
@@ -785,21 +900,24 @@ function RankingContent({
   slide,
   thumbnailSize,
   presentationId,
+  isPreview,
 }: {
-  thumbnailSize?: ThumbnailSize;
+  thumbnailSize?: ThumbnailSize | undefined;
   slide: RankingSlide;
-  presentationId?: string;
+  presentationId?: string | undefined;
+  isPreview?: boolean | undefined;
 }) {
   const dispatch = useAppDispatch();
   const isThumbnail = thumbnailSize !== false;
   const isCard = thumbnailSize === "card";
 
   const handleUpdate = (updates: Partial<Slide>) => {
-    if (presentationId && !isThumbnail) {
+    if (presentationId && (!isThumbnail && !isPreview)) {
       dispatch(updateSlide({ presentationId, slideId: slide.id, updates }));
     }
   };
   if (isThumbnail) {
+    const itemsArray = Array.isArray((slide as any).options || slide.items) ? ((slide as any).options || slide.items) : [];
     return (
       <div
         className={cn(
@@ -826,8 +944,7 @@ function RankingContent({
           />
         )}
         <div className={cn("mt-1 flex flex-col", isCard ? "gap-1" : "gap-0.5")}>
-          {Array.isArray(slide.items) &&
-            slide.items.slice(0, 3).map((item, index) => (
+          {itemsArray.slice(0, 3).map((item: any, index: number) => (
               <div
                 key={item.id}
                 className={cn(
@@ -859,7 +976,7 @@ function RankingContent({
                 </span>
               </div>
             ))}
-          {Array.isArray(slide.items) && slide.items.length > 3 && (
+          {itemsArray.length > 3 && (
             <span
               className={cn(
                 "opacity-60",
@@ -867,7 +984,7 @@ function RankingContent({
               )}
               style={{ color: slide.theme.textColor }}
             >
-              +{slide.items.length - 3} more
+              +{itemsArray.length - 3} more
             </span>
           )}
         </div>
@@ -879,24 +996,25 @@ function RankingContent({
       <InlineTextEdit
         text={slide.title || ""}
         placeholder="Ranking Question"
-        isEditable={!isThumbnail}
+        isEditable={(!isThumbnail && !isPreview)}
         onUpdate={(title) => handleUpdate({ title })}
         className="text-3xl font-bold mb-4 text-center block w-full max-w-4xl"
         style={{ color: slide.theme.textColor }}
       />
-      {(slide.subtitle || !isThumbnail) && (
+      {(slide.subtitle || (!isThumbnail && !isPreview)) && (
         <InlineTextEdit
           text={slide.subtitle || ""}
           placeholder="Add a subtitle..."
-          isEditable={!isThumbnail}
+          isEditable={(!isThumbnail && !isPreview)}
           onUpdate={(subtitle) => handleUpdate({ subtitle })}
           className="text-lg mb-8 opacity-70 block w-full max-w-3xl text-center"
           style={{ color: slide.theme.textColor }}
         />
       )}
       <div className="w-full max-w-md space-y-3">
-        {Array.isArray(slide.items) &&
-          slide.items.map((item, index) => (
+        {(() => {
+          const itemsArray = Array.isArray((slide as any).options || slide.items) ? ((slide as any).options || slide.items) : [];
+          return itemsArray.map((item: any, index: number) => (
             <div
               key={item.id}
               className="flex items-center gap-3 rounded-xl p-4 transition-all"
@@ -905,7 +1023,7 @@ function RankingContent({
               }}
             >
               <span
-                className="flex size-8 items-center justify-center rounded-full text-sm font-bold"
+                className="flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-bold"
                 style={{
                   backgroundColor: slide.theme.accentColor,
                   color: "#fff",
@@ -913,9 +1031,20 @@ function RankingContent({
               >
                 {index + 1}
               </span>
-              <span style={{ color: slide.theme.textColor }}>{item.text}</span>
+              <InlineTextEdit
+                text={item.text || ""}
+                placeholder={`Item ${index + 1}`}
+                isEditable={(!isThumbnail && !isPreview)}
+                onUpdate={(newText) => {
+                  const newItems = itemsArray.map((o: any) => o.id === item.id ? { ...o, text: newText } : o);
+                  handleUpdate({ options: newItems });
+                }}
+                className="flex-1 w-full text-left"
+                style={{ color: slide.theme.textColor }}
+              />
             </div>
-          ))}
+          ));
+        })()}
       </div>
     </div>
   );
@@ -925,21 +1054,30 @@ function ScalesContent({
   slide,
   thumbnailSize,
   presentationId,
+  isPreview,
 }: {
-  thumbnailSize?: ThumbnailSize;
+  thumbnailSize?: ThumbnailSize | undefined;
   slide: ScalesSlide;
-  presentationId?: string;
+  presentationId?: string | undefined;
+  isPreview?: boolean | undefined;
 }) {
   const dispatch = useAppDispatch();
   const isThumbnail = thumbnailSize !== false;
   const isCard = thumbnailSize === "card";
 
   const handleUpdate = (updates: Partial<Slide>) => {
-    if (presentationId && !isThumbnail) {
+    if (presentationId && (!isThumbnail && !isPreview)) {
       dispatch(updateSlide({ presentationId, slideId: slide.id, updates }));
     }
   };
   if (isThumbnail) {
+    const meta = (slide as any).meta || {};
+    const steps = slide.steps ?? meta.steps ?? 5;
+    const statement = slide.statement || meta.statement || "";
+    const labels = slide.scaleLabels || meta.scaleLabels;
+    const leftLabel = Array.isArray(labels) ? labels[0] : labels?.left;
+    const rightLabel = Array.isArray(labels) ? labels[labels.length - 1] : labels?.right;
+
     return (
       <div className="flex h-full w-full min-w-0 flex-col items-center justify-start gap-0 overflow-hidden px-0.5 text-center">
         <h2
@@ -956,7 +1094,7 @@ function ScalesContent({
             isCard ? "text-[10px]" : "text-[8px]",
           )}
           style={{ color: slide.theme.textColor }}
-          dangerouslySetInnerHTML={{ __html: `&quot;${slide.statement}&quot;` }}
+          dangerouslySetInnerHTML={{ __html: `&quot;${statement}&quot;` }}
         />
         <div
           className={cn(
@@ -964,13 +1102,13 @@ function ScalesContent({
             isCard ? "gap-1" : "gap-0.5",
           )}
         >
-          {Array.from({ length: Math.min(slide.steps, 5) }).map((_, i) => (
+          {Array.from({ length: Math.min(steps, 5) }).map((_, i) => (
             <span
               key={i}
               className={cn("rounded-full", isCard ? "size-2.5" : "size-2")}
               style={{
                 backgroundColor:
-                  i === Math.floor(slide.steps / 2)
+                  i === Math.floor(steps / 2)
                     ? slide.theme.accentColor
                     : slide.theme.textColor + "30",
               }}
@@ -984,42 +1122,49 @@ function ScalesContent({
           )}
           style={{ color: slide.theme.textColor }}
         >
-          {slide.scaleLabels?.left} – {slide.scaleLabels?.right}
+          {leftLabel} – {rightLabel}
         </p>
       </div>
     );
   }
+  const meta = (slide as any).meta || {};
+  const steps = slide.steps ?? meta.steps ?? 5;
+  const statement = slide.statement || meta.statement || "";
+  const labels = slide.scaleLabels || meta.scaleLabels;
+  const leftLabel = Array.isArray(labels) ? labels[0] : labels?.left;
+  const rightLabel = Array.isArray(labels) ? labels[labels.length - 1] : labels?.right;
+
   return (
     <div className="flex h-full w-full flex-col items-center justify-center">
       <InlineTextEdit
         text={slide.title || ""}
         placeholder="Scales"
-        isEditable={!isThumbnail}
+        isEditable={(!isThumbnail && !isPreview)}
         onUpdate={(title) => handleUpdate({ title })}
         className="text-3xl font-bold mb-4 text-center block w-full max-w-4xl"
         style={{ color: slide.theme.textColor }}
       />
       <InlineTextEdit
-        text={slide.statement || ""}
+        text={statement || ""}
         placeholder="Enter a statement..."
-        isEditable={!isThumbnail}
-        onUpdate={(statement) => handleUpdate({ statement })}
+        isEditable={(!isThumbnail && !isPreview)}
+        onUpdate={(newStatement) => handleUpdate({ statement: newStatement })}
         className="text-xl mb-8 text-center max-w-2xl block w-full"
         style={{ color: slide.theme.textColor }}
       />
       <div className="w-full max-w-xl">
         <div className="flex justify-between mb-4">
-          {Array.from({ length: slide.steps }).map((_, i) => (
+          {Array.from({ length: steps }).map((_, i) => (
             <button
               key={i}
               className="size-12 rounded-full text-sm font-medium transition-all hover:scale-110"
               style={{
                 backgroundColor:
-                  i === Math.floor(slide.steps / 2)
+                  i === Math.floor(steps / 2)
                     ? slide.theme.accentColor
                     : slide.theme.textColor + "10",
                 color:
-                  i === Math.floor(slide.steps / 2)
+                  i === Math.floor(steps / 2)
                     ? "#fff"
                     : slide.theme.textColor,
               }}
@@ -1029,11 +1174,23 @@ function ScalesContent({
           ))}
         </div>
         <div
-          className="flex justify-between text-sm"
+          className="flex justify-between text-sm w-full"
           style={{ color: slide.theme.textColor }}
         >
-          <span>{slide.scaleLabels.left}</span>
-          <span>{slide.scaleLabels.right}</span>
+          <InlineTextEdit
+            text={leftLabel || ""}
+            placeholder="Left label"
+            isEditable={(!isThumbnail && !isPreview)}
+            onUpdate={(left) => handleUpdate({ scaleLabels: { left, right: rightLabel || "" } })}
+            className="inline-block min-w-[4rem]"
+          />
+          <InlineTextEdit
+            text={rightLabel || ""}
+            placeholder="Right label"
+            isEditable={(!isThumbnail && !isPreview)}
+            onUpdate={(right) => handleUpdate({ scaleLabels: { left: leftLabel || "", right } })}
+            className="inline-block min-w-[4rem] text-right"
+          />
         </div>
       </div>
     </div>
@@ -1044,18 +1201,21 @@ function QAContent({
   slide,
   thumbnailSize,
   presentationId,
+  isPreview,
 }: {
-  thumbnailSize?: ThumbnailSize;
+  thumbnailSize?: ThumbnailSize | undefined;
   slide: QASlide;
-  presentationId?: string;
+  presentationId?: string | undefined;
+  isPreview?: boolean | undefined;
 }) {
   const dispatch = useAppDispatch();
   const isThumbnail = thumbnailSize !== false;
   const isCard = thumbnailSize === "card";
   const sampleQuestions = QA_SAMPLE_QUESTIONS;
+  const displayQuestions = slide.questions && slide.questions.length > 0 ? slide.questions : sampleQuestions;
 
   const handleUpdate = (updates: Partial<Slide>) => {
-    if (presentationId && !isThumbnail) {
+    if (presentationId && (!isThumbnail && !isPreview)) {
       dispatch(updateSlide({ presentationId, slideId: slide.id, updates }));
     }
   };
@@ -1077,7 +1237,7 @@ function QAContent({
             isCard ? "gap-1" : "gap-0.5",
           )}
         >
-          {sampleQuestions.slice(0, 2).map((q, i) => (
+          {displayQuestions.slice(0, 2).map((q, i) => (
             <div
               key={i}
               className={cn(
@@ -1111,26 +1271,37 @@ function QAContent({
       <InlineTextEdit
         text={slide.title || ""}
         placeholder="Q&A Session"
-        isEditable={!isThumbnail}
+        isEditable={(!isThumbnail && !isPreview)}
         onUpdate={(title) => handleUpdate({ title })}
         className="text-3xl font-bold mb-6 text-center block w-full max-w-4xl mx-auto"
         style={{ color: slide.theme.textColor }}
       />
       <div className="flex-1 space-y-3 max-w-xl mx-auto w-full">
-        {sampleQuestions.map((q, i) => (
+        {displayQuestions.map((q, i) => (
           <div
-            key={i}
+            key={(q as any).id || i}
             className="flex items-center gap-3 rounded-xl p-4"
             style={{ backgroundColor: slide.theme.textColor + "10" }}
           >
             <button
-              className="flex flex-col items-center gap-1 px-2"
+              className="flex flex-col items-center gap-1 px-2 shrink-0"
               style={{ color: slide.theme.accentColor }}
             >
               <ThumbsUp className="size-4" />
-              <span className="text-xs font-medium">{q.upvotes}</span>
+              <span className="text-xs font-medium">{q.upvotes || 0}</span>
             </button>
-            <p style={{ color: slide.theme.textColor }}>{q.text}</p>
+            <InlineTextEdit
+              text={q.text || ""}
+              placeholder="Question"
+              isEditable={(!isThumbnail && !isPreview)}
+              onUpdate={(newText) => {
+                const newQs = [...displayQuestions];
+                newQs[i] = { ...newQs[i], text: newText };
+                handleUpdate({ questions: newQs as any });
+              }}
+              className="flex-1 w-full text-left"
+              style={{ color: slide.theme.textColor }}
+            />
           </div>
         ))}
       </div>
@@ -1142,22 +1313,25 @@ function PointsContent({
   slide,
   thumbnailSize,
   presentationId,
+  isPreview,
 }: {
-  thumbnailSize?: ThumbnailSize;
+  thumbnailSize?: ThumbnailSize | undefined;
   slide: PointsSlide;
-  presentationId?: string;
+  presentationId?: string | undefined;
+  isPreview?: boolean | undefined;
 }) {
   const dispatch = useAppDispatch();
   const isThumbnail = thumbnailSize !== false;
   const isCard = thumbnailSize === "card";
-  const mockAllocations = Array.isArray(slide.items) && slide.items.map(
-    (_, i) =>
-      Math.floor(slide.totalPoints / slide.items.length) +
-      (i === 0 ? slide.totalPoints % slide.items.length : 0),
-  ) || [] ;
+  const itemsArray = Array.isArray((slide as any).options || slide.items) ? ((slide as any).options || slide.items) : [];
+  const mockAllocations = itemsArray.map(
+    (_: any, i: number) =>
+      Math.floor(slide.totalPoints / itemsArray.length) +
+      (i === 0 ? slide.totalPoints % itemsArray.length : 0),
+  );
 
   const handleUpdate = (updates: Partial<Slide>) => {
-    if (presentationId && !isThumbnail) {
+    if (presentationId && (!isThumbnail && !isPreview)) {
       dispatch(updateSlide({ presentationId, slideId: slide.id, updates }));
     }
   };
@@ -1194,8 +1368,7 @@ function PointsContent({
             isCard ? "space-y-1" : "space-y-0.5",
           )}
         >
-          {Array.isArray(slide.items) &&
-            slide.items.slice(0, 3).map((item, index) => (
+          {itemsArray.slice(0, 3).map((item: any, index: number) => (
               <div key={item.id} className="flex items-center gap-1">
                 <div
                   className={cn(
@@ -1238,31 +1411,38 @@ function PointsContent({
       <InlineTextEdit
         text={slide.title || ""}
         placeholder="100 points"
-        isEditable={!isThumbnail}
+        isEditable={(!isThumbnail && !isPreview)}
         onUpdate={(title) => handleUpdate({ title })}
         className="text-3xl font-bold mb-4 text-center block w-full max-w-4xl"
         style={{ color: slide.theme.textColor }}
       />
-      {(slide.subtitle || !isThumbnail) && (
+      {(slide.subtitle || (!isThumbnail && !isPreview)) && (
         <InlineTextEdit
           text={slide.subtitle || ""}
           placeholder="Add a subtitle..."
-          isEditable={!isThumbnail}
+          isEditable={(!isThumbnail && !isPreview)}
           onUpdate={(subtitle) => handleUpdate({ subtitle })}
           className="text-lg mb-8 opacity-70 block w-full max-w-3xl text-center"
           style={{ color: slide.theme.textColor }}
         />
       )}
       <div className="w-full max-w-md space-y-4">
-        {Array.isArray(slide.items) &&
-          slide.items.map((item, index) => (
+        {itemsArray.map((item: any, index: number) => (
             <div key={item.id} className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span style={{ color: slide.theme.textColor }}>
-                  {item.text}
-                </span>
+              <div className="flex justify-between items-center w-full gap-4">
+                <InlineTextEdit
+                  text={item.text || ""}
+                  placeholder={`Item ${index + 1}`}
+                  isEditable={(!isThumbnail && !isPreview)}
+                  onUpdate={(newText) => {
+                    const newItems = itemsArray.map((o: any) => o.id === item.id ? { ...o, text: newText } : o);
+                    handleUpdate({ options: newItems });
+                  }}
+                  className="flex-1 text-left"
+                  style={{ color: slide.theme.textColor }}
+                />
                 <span
-                  className="font-bold"
+                  className="font-bold shrink-0"
                   style={{ color: slide.theme.accentColor }}
                 >
                   {mockAllocations[index]} pts
@@ -1297,10 +1477,12 @@ function WheelContent({
   slide,
   thumbnailSize,
   presentationId,
+  isPreview,
 }: {
-  thumbnailSize?: ThumbnailSize;
+  thumbnailSize?: ThumbnailSize | undefined;
   slide: WheelSlide;
-  presentationId?: string;
+  presentationId?: string | undefined;
+  isPreview?: boolean | undefined;
 }) {
   const dispatch = useAppDispatch();
   const isThumbnail = thumbnailSize !== false;
@@ -1309,7 +1491,7 @@ function WheelContent({
   const segmentAngle = 360 / slide.names.length;
 
   const handleUpdate = (updates: Partial<Slide>) => {
-    if (presentationId && !isThumbnail) {
+    if (presentationId && (!isThumbnail && !isPreview)) {
       dispatch(updateSlide({ presentationId, slideId: slide.id, updates }));
     }
   };
@@ -1387,7 +1569,7 @@ function WheelContent({
       <InlineTextEdit
         text={slide.title || ""}
         placeholder="Wheel of Names"
-        isEditable={!isThumbnail}
+        isEditable={(!isThumbnail && !isPreview)}
         onUpdate={(title) => handleUpdate({ title })}
         className="text-3xl font-bold mb-6 text-center block w-full max-w-4xl"
         style={{ color: slide.theme.textColor }}
@@ -1465,17 +1647,19 @@ function DefaultContent({
   slide,
   thumbnailSize,
   presentationId,
+  isPreview,
 }: {
-  thumbnailSize?: ThumbnailSize;
+  thumbnailSize?: ThumbnailSize | undefined;
   slide: Slide;
-  presentationId?: string;
+  presentationId?: string | undefined;
+  isPreview?: boolean | undefined;
 }) {
   const dispatch = useAppDispatch();
   const isThumbnail = thumbnailSize !== false;
   const isCard = thumbnailSize === "card";
 
   const handleUpdate = (updates: Partial<Slide>) => {
-    if (presentationId && !isThumbnail) {
+    if (presentationId && (!isThumbnail && !isPreview)) {
       dispatch(updateSlide({ presentationId, slideId: slide.id, updates }));
     }
   };
@@ -1513,21 +1697,260 @@ function DefaultContent({
       <InlineTextEdit
         text={slide.title || ""}
         placeholder="Slide Title"
-        isEditable={!isThumbnail}
+        isEditable={(!isThumbnail && !isPreview)}
         onUpdate={(title) => handleUpdate({ title })}
         className="text-4xl font-bold mb-4 block w-full max-w-4xl"
         style={{ color: slide.theme.textColor }}
       />
-      {(slide.subtitle || !isThumbnail) && (
+      {(slide.subtitle || (!isThumbnail && !isPreview)) && (
         <InlineTextEdit
           text={slide.subtitle || ""}
           placeholder="Add a subtitle..."
-          isEditable={!isThumbnail}
+          isEditable={(!isThumbnail && !isPreview)}
           onUpdate={(subtitle) => handleUpdate({ subtitle })}
           className="text-xl opacity-70 block w-full max-w-3xl"
           style={{ color: slide.theme.textColor }}
         />
       )}
+    </div>
+  );
+}
+
+function NumberContent({
+  slide,
+  thumbnailSize,
+  presentationId,
+  isPreview,
+}: {
+  thumbnailSize?: ThumbnailSize | undefined;
+  slide: NumberSlide;
+  presentationId?: string | undefined;
+  isPreview?: boolean | undefined;
+}) {
+  const dispatch = useAppDispatch();
+  const isThumbnail = thumbnailSize !== false;
+  const isCard = thumbnailSize === "card";
+
+  const handleUpdate = (updates: Partial<Slide>) => {
+    if (presentationId && (!isThumbnail && !isPreview)) {
+      dispatch(updateSlide({ presentationId, slideId: slide.id, updates }));
+    }
+  };
+
+  if (isThumbnail) {
+    return (
+      <div
+        className={cn(
+          "flex h-full w-full flex-col items-center justify-center text-center",
+          isCard ? "gap-1.5" : "gap-0.5",
+        )}
+      >
+        <h2
+          className={cn(
+            "line-clamp-1 max-w-full font-semibold leading-tight",
+            isCard ? "text-xs" : "text-[10px]",
+          )}
+          style={{ color: slide.theme.textColor }}
+          dangerouslySetInnerHTML={{ __html: slide.title || "Number input" }}
+        />
+        {slide.subtitle && (
+          <p
+            className={cn(
+              "line-clamp-1 max-w-full opacity-80",
+              isCard ? "text-[10px]" : "text-[8px]",
+            )}
+            style={{ color: slide.theme.textColor }}
+            dangerouslySetInnerHTML={{ __html: slide.subtitle }}
+          />
+        )}
+        <div
+          className={cn(
+            "mt-1 w-full max-w-[80%] rounded border border-dashed opacity-70",
+            isCard ? "px-2 py-1 text-[10px]" : "px-1.5 py-0.5 text-[8px]",
+          )}
+          style={{
+            borderColor: slide.theme.accentColor + "60",
+            color: slide.theme.textColor,
+          }}
+        >
+          123...
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="flex h-full w-full flex-col items-center justify-center">
+      <InlineTextEdit
+        text={slide.title || ""}
+        placeholder="Number Question"
+        isEditable={(!isThumbnail && !isPreview)}
+        onUpdate={(title) => handleUpdate({ title })}
+        className="text-3xl font-bold mb-4 text-center block w-full max-w-4xl"
+        style={{ color: slide.theme.textColor }}
+      />
+      {(slide.subtitle || (!isThumbnail && !isPreview)) && (
+        <InlineTextEdit
+          text={slide.subtitle || ""}
+          placeholder="Add a subtitle..."
+          isEditable={(!isThumbnail && !isPreview)}
+          onUpdate={(subtitle) => handleUpdate({ subtitle })}
+          className="text-lg mb-8 opacity-70 block w-full max-w-3xl text-center"
+          style={{ color: slide.theme.textColor }}
+        />
+      )}
+      <div
+        className="w-full max-w-xl rounded-xl border-2 border-dashed p-8 text-center flex flex-col items-center justify-center gap-2"
+        style={{ borderColor: slide.theme.accentColor + "40" }}
+      >
+        <span className="text-4xl font-mono" style={{ color: slide.theme.textColor + "80" }}>123</span>
+        <p className="text-muted-foreground">
+          Participants will input a number here.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function QuizContent({
+  slide,
+  thumbnailSize,
+  presentationId,
+  isPreview,
+
+}: {
+  thumbnailSize?: ThumbnailSize | undefined;
+  slide: QuizSlide;
+  presentationId?: string | undefined;
+  isPreview?: boolean | undefined;
+  responses?: any[] | undefined;
+}) {
+  const dispatch = useAppDispatch();
+  const isThumbnail = thumbnailSize !== false;
+  const isCard = thumbnailSize === "card";
+
+  const handleUpdate = (updates: Partial<Slide>) => {
+    if (presentationId && (!isThumbnail && !isPreview)) {
+      dispatch(updateSlide({ presentationId, slideId: slide.id, updates }));
+    }
+  };
+  
+  const optionsArray = Array.isArray((slide as any).options || (slide as any).items) ? ((slide as any).options || (slide as any).items) : [];
+
+  if (isThumbnail) {
+    return (
+      <div
+        className={cn(
+          "flex h-full w-full flex-col items-center justify-center text-center",
+          isCard ? "gap-1.5" : "gap-1",
+        )}
+      >
+        <h2
+          className={cn(
+            "line-clamp-1 max-w-full font-semibold leading-tight",
+            isCard ? "text-xs" : "text-[10px]",
+          )}
+          style={{ color: slide.theme.textColor }}
+          dangerouslySetInnerHTML={{ __html: slide.title || "Quiz" }}
+        />
+        {slide.subtitle && (
+          <p
+            className={cn(
+              "line-clamp-1 max-w-full opacity-80",
+              isCard ? "text-[10px]" : "text-[8px]",
+            )}
+            style={{ color: slide.theme.textColor }}
+            dangerouslySetInnerHTML={{ __html: slide.subtitle }}
+          />
+        )}
+        <div
+          className={cn(
+            "flex flex-wrap items-center justify-center",
+            isCard ? "mt-1 gap-1.5" : "mt-0.5 gap-1",
+          )}
+        >
+          {optionsArray.slice(0, 4).map((option: any, index: number) => (
+            <span
+              key={option.id || index}
+              className={cn(
+                "rounded font-medium text-white border",
+                isCard ? "px-2 py-1 text-[10px]" : "px-1.5 py-0.5 text-[8px]",
+              )}
+              style={{
+                backgroundColor: option.color || slide.theme.accentColor,
+                borderColor: option.isCorrect && !isPreview ? "#22c55e" : "transparent"
+              }}
+            >
+              {String.fromCharCode(65 + index)}
+            </span>
+          ))}
+          {optionsArray.length > 4 && (
+            <span
+              className={cn(
+                "opacity-70",
+                isCard ? "text-[10px]" : "text-[8px]",
+              )}
+              style={{ color: slide.theme.textColor }}
+            >
+              +{optionsArray.length - 4}
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="flex h-full w-full flex-col">
+      <div className="mb-8 text-center w-full relative">
+        <div className="absolute right-0 top-0 flex flex-col items-end gap-1">
+          <span className="text-sm font-bold opacity-80" style={{ color: slide.theme.textColor }}>{slide.timeLimit || 15}s</span>
+          <span className="text-xs opacity-60" style={{ color: slide.theme.textColor }}>{slide.points || 1000} pts</span>
+        </div>
+        <InlineTextEdit
+          text={slide.title || ""}
+          placeholder="Your quiz question here"
+          isEditable={(!isThumbnail && !isPreview)}
+          onUpdate={(title) => handleUpdate({ title })}
+          className="text-3xl font-bold mb-2 block w-full max-w-4xl mx-auto"
+          style={{ color: slide.theme.textColor }}
+        />
+        {(slide.subtitle || (!isThumbnail && !isPreview)) && (
+          <InlineTextEdit
+            text={slide.subtitle || ""}
+            placeholder="Add a subtitle..."
+            isEditable={(!isThumbnail && !isPreview)}
+            onUpdate={(subtitle) => handleUpdate({ subtitle })}
+            className="text-lg opacity-70 block w-full max-w-3xl mx-auto"
+            style={{ color: slide.theme.textColor }}
+          />
+        )}
+      </div>
+      <div className="grid flex-1 grid-cols-2 gap-4">
+        {optionsArray.map((option: any, index: number) => (
+          <div
+            key={option.id || index}
+            className={cn(
+              "flex items-center justify-start rounded-xl font-medium text-white transition-transform",
+              isPreview ? "p-4 text-base" : "p-6 text-lg",
+              option.isCorrect && !isPreview ? "ring-4 ring-green-500" : ""
+            )}
+            style={{ backgroundColor: option.color || slide.theme.accentColor }}
+          >
+            <span className="mr-3 flex size-8 shrink-0 items-center justify-center rounded-full bg-white/20 text-sm">
+              {String.fromCharCode(65 + index)}
+            </span>
+            <InlineTextEdit
+              text={option.text || ""}
+              placeholder={`Option ${index + 1}`}
+              isEditable={(!isThumbnail && !isPreview)}
+              onUpdate={(newText) => {
+                const newOptions = optionsArray.map((o: any) => o.id === option.id ? { ...o, text: newText } : o);
+                handleUpdate({ options: newOptions });
+              }}
+              className="flex-1 w-full text-left"
+            />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

@@ -12,11 +12,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import {
-  Slide,
-  WordCloudSlide,
+  type Slide,
+  type WordCloudSlide,
   THEMES,
 } from "@/types/presentation";
-import { RightPanelProps, DesignTabProps, SettingsTabProps } from "./types";
+import { type RightPanelProps, type DesignTabProps, type SettingsTabProps } from "./types";
 import { RIGHT_PANEL_TABS } from "./data.const";
 
 
@@ -57,7 +57,7 @@ export default function RightPanel({ slide, presentationId, isTemplatePreview }:
       </div>
 
       {/* Vertical tabs (right) */}
-      <div className="flex shrink-0 flex-col mt-4 h-fit border-l border-border/60 bg-white p-1 rounded-2xl">
+      <div className="flex shrink-0 flex-col mt-4 h-fit border-l border-border/60 bg-white dark:bg-slate-900 p-1 rounded-2xl">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -68,7 +68,7 @@ export default function RightPanel({ slide, presentationId, isTemplatePreview }:
               onClick={() => dispatch(setRightPanelTab(tab.id))}
               className={cn(
                 "flex flex-col items-center gap-1 px-7 py-8 text-xs font-medium transition-colors",
-                isActive && "border border-primary bg-primary/10 rounded-2xl",
+                isActive && "border border-primary bg-primary/10 dark:bg-primary/20 rounded-2xl",
               )}
             >
               <Icon className="size-4 shrink-0" />
@@ -91,10 +91,12 @@ function DesignTab({ slide, presentationId }: DesignTabProps) {
       ...themeUpdates,
     };
     dispatch(applyThemeToAll({ presentationId, theme: newTheme }));
-    try {
-      await updatePresentationTheme({ id: presentationId, theme: newTheme }).unwrap();
-    } catch (err) {
-      console.error("Failed to apply theme to all slides", err);
+    if (!presentationId.startsWith("template-")) {
+      try {
+        await updatePresentationTheme({ id: presentationId, theme: newTheme }).unwrap();
+      } catch (err) {
+        console.error("Failed to apply theme to all slides", err);
+      }
     }
   };
 
@@ -102,16 +104,18 @@ function DesignTab({ slide, presentationId }: DesignTabProps) {
     const theme = THEMES[themeKey];
     if (theme) {
       dispatch(applyThemeToAll({ presentationId, theme }));
-      try {
-        await updatePresentationTheme({ id: presentationId, theme }).unwrap();
-      } catch (err) {
-        console.error("Failed to apply theme to all slides", err);
+      if (!presentationId.startsWith("template-")) {
+        try {
+          await updatePresentationTheme({ id: presentationId, theme }).unwrap();
+        } catch (err) {
+          console.error("Failed to apply theme to all slides", err);
+        }
       }
     }
   };
 
   return (
-    <div className="space-y-6 bg-zinc-50 p-10 rounded-2xl">
+    <div className="space-y-6 bg-zinc-50 dark:bg-slate-900 p-10 rounded-2xl border border-border/50">
       <div className="space-y-3">
         <Label>Theme Presets</Label>
         <div className="grid grid-cols-2 gap-2">
@@ -218,7 +222,7 @@ function SettingsTab({ slide, onUpdate, presentationId, slideId, isTemplatePrevi
   );
 
   return (
-    <div className="space-y-6 bg-zinc-50 p-10 rounded-2xl">
+    <div className="space-y-6 bg-zinc-50 dark:bg-slate-900 p-10 rounded-2xl border border-border/50">
       {(slide.type === "multiple-choice" ||
         slide.type === "quiz" ||
         slide.type === "image-choice") && (

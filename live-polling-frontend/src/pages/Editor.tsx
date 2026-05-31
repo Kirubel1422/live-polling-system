@@ -1,44 +1,55 @@
-import { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ChevronLeft, Play, Save, Settings, Share, Plus } from 'lucide-react';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { setSelectedSlide } from '@/store/editorSlice';
-import { addPresentation, addSlide, updatePresentation, deletePresentation } from '@/store/presentationsSlice';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ChevronLeft, Play, Save, Share, Plus } from 'lucide-react';
+import { useAppDispatch } from '@/store/hooks';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { DEFAULT_THEME, ContentSlide } from '@/types/presentation';
-import { nanoid } from 'nanoid';
+import { Textarea } from '@/components/ui/textarea';
+import { Wand2 } from 'lucide-react';
+import modifying from "../assets/modifying.json"
 import { SlideList, SlideCanvas, RightPanel, AddSlideMenu } from '@/components/editor/components';
 import AIGenerationModal from '@/components/ai-generation-modal/AIGenerationModal';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
+  DialogFooter
 } from "@/components/ui/dialog";
-import { useCreatePresentationMutation, useLazyGetPresentationQuery, useUpdatePresentationMutation } from "@/api/presentations.api";
-import { toast } from "sonner";
+import { useEditorState } from "@/components/editor/hooks";
 import { Loader2 } from "lucide-react";
+import { Badge } from '@/components/ui/badge';
+import Lottie from 'lottie-react';
 
 function EditorToolbar({
   title,
   presentationId,
+  joinCode,
   onTitleChange,
   onBackClick,
   onSaveClick,
   isSaving,
+  onEnhanceSubmit,
+  isEnhancing,
+  enhanceReasoning,
 }: {
   title: string;
   presentationId: string;
+  joinCode?: string;
   onTitleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onBackClick: () => void;
   onSaveClick: () => void;
   isSaving?: boolean;
+  onEnhanceSubmit: (prompt: string) => void;
+  isEnhancing?: boolean;
+  enhanceReasoning?: string;
 }) {
+  const [enhancePrompt, setEnhancePrompt] = useState("");
+  const [modalOpen, setModalOpen] = useState(false);
+
   return (
     <header className="flex h-14 items-center bg-background justify-between border-b px-4">
       <div className="flex items-center gap-3">
@@ -54,18 +65,69 @@ function EditorToolbar({
         <Input
           value={title}
           onChange={onTitleChange}
-          className="h-8 w-64 border-transparent bg-transparent px-2 text-sm text-gray-500 font-medium hover:border-input focus:border-input shadow-none"
+          className="h-8 sm:w-80 border-transparent bg-transparent px-2 text-sm text-gray-500 font-medium hover:border-input focus:border-input shadow-none"
         />
       </div>
+      {joinCode && (
+        <Badge variant="outline" className='text-md text-neutral-600'>
+          Join Code: <span className='bg-neutral-200 px-2 ml-2 rounded-xl text-neutral-900'>{joinCode}</span>
+        </Badge>
+      )}
       <div className="flex items-center gap-2">
         <Separator orientation="vertical" className="h-6" />
+         
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon-sm"><Settings className="size-4" /></Button>
+            <Button 
+              variant="ghost" 
+              size="icon-sm" 
+              className="text-primary hover:text-primary hover:bg-primary/10"
+              onClick={() => setModalOpen(true)}
+            >
+              <Wand2 className="size-4" />
+            </Button>
           </TooltipTrigger>
-          <TooltipContent>Settings</TooltipContent>
+          <TooltipContent>Enhance with AI</TooltipContent>
         </Tooltip>
-        <Tooltip>
+
+        <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Enhance with AI</DialogTitle>
+            </DialogHeader>
+            {isEnhancing ? (
+              <div className="flex flex-col items-center justify-center space-y-4 py-8">
+                <ModifyingReview />
+                <p className="text-sm text-primary/80 text-center break-words w-full overflow-hidden text-ellipsis line-clamp-4">
+                  {enhanceReasoning || "Thinking..."}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4 pt-4">
+                <Textarea
+                  placeholder="e.g. Make it more professional, change theme to dark, or add a quiz slide at the end..."
+                  value={enhancePrompt}
+                  onChange={(e) => setEnhancePrompt(e.target.value)}
+                  className="resize-none min-h-[120px]"
+                />
+                <Button 
+                  className="w-full" 
+                  onClick={() => {
+                    if (enhancePrompt.trim()) {
+                      onEnhanceSubmit(enhancePrompt);
+                      setEnhancePrompt("");
+                    }
+                  }}
+                  disabled={!enhancePrompt.trim()}
+                >
+                  <Wand2 className="size-4 mr-2" /> Modify with AI
+                </Button>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        <Tooltip> 
           <TooltipTrigger asChild>
             <Button variant="ghost" size="icon-sm"><Share className="size-4" /></Button>
           </TooltipTrigger>
@@ -84,6 +146,20 @@ function EditorToolbar({
         </Button>
       </div>
     </header>
+  );
+}
+
+function ModifyingReview() {
+  return (
+    <>
+      <Lottie
+        animationData={modifying}
+        loop
+        autoplay
+        style={{ width: 250, height: 250 }}
+        className="mx-auto"
+      />
+    </>
   );
 }
 
@@ -127,70 +203,27 @@ function SlidePanel({
 }
 
 export default function Editor() {
-  const { presentationId } = useParams<{ presentationId: string }>();
-  const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const [createPresentation, { isLoading: isSaving }] = useCreatePresentationMutation();
-  const [updatePresentationApi] = useUpdatePresentationMutation();
-  const [getPresentationById] = useLazyGetPresentationQuery();
-  const [showExitWarning, setShowExitWarning] = useState(false);
-  const [isFetching, setIsFetching] = useState(false);
-  const isFirstRender = useRef(true);
-
-  const presentation = useAppSelector((state) =>
-    state.presentations.items.find((p) => p.id === presentationId),
-  );
-  const selectedSlideId = useAppSelector((state) => state.editor.selectedSlideId);
-  const isAIModalOpen = useAppSelector((state) => state.editor.isAIModalOpen);
-
-  const selectedSlide = presentation?.slides.find((s) => s.id === selectedSlideId);
-
-  useEffect(() => {
-    if (presentation && presentation.slides.length > 0 && !selectedSlideId) {
-      dispatch(setSelectedSlide(presentation.slides[0].id));
-    }
-  }, [presentation, selectedSlideId, dispatch]);
-
-  useEffect(() => {
-    if (!presentation && presentationId) {
-      // If it's a template preview, it should have been put into Redux by Dashboard.
-      if (presentationId.startsWith('template-')) {
-        navigate('/');
-        return;
-      }
-      
-      // Fetch from API if missing from Redux
-      setIsFetching(true);
-      getPresentationById(presentationId)
-        .unwrap()
-        .then((data) => {
-          dispatch(addPresentation(data));
-        })
-        .catch(() => {
-          toast.error("Presentation not found");
-          navigate('/');
-        })
-        .finally(() => {
-          setIsFetching(false);
-        });
-    }
-  }, [presentation, presentationId, getPresentationById, dispatch, navigate]);
-
-  const isTemplatePreview = presentationId?.startsWith('template-') || false;
-
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-    
-    if (presentation && !isTemplatePreview) {
-      const handler = setTimeout(() => {
-        updatePresentationApi({ id: presentation.id, data: { title: presentation.title } }).catch(console.error);
-      }, 1000);
-      return () => clearTimeout(handler);
-    }
-  }, [presentation?.title, presentation?.id, isTemplatePreview, updatePresentationApi]);
+  const {
+    showExitWarning,
+    setShowExitWarning,
+    isFetching,
+    isEnhancing,
+    enhanceReasoning,
+    presentation,
+    selectedSlideId,
+    isAIModalOpen,
+    selectedSlide,
+    isTemplatePreview,
+    isSaving,
+    handleTitleChange,
+    handleBackClick,
+    handleSaveClick,
+    handleExitWithoutSaving,
+    handleSaveAndExit,
+    handleEnhance,
+    handleAddFirstSlide
+  } = useEditorState();
 
   if (isFetching) {
     return (
@@ -202,72 +235,19 @@ export default function Editor() {
 
   if (!presentation) return null;
 
-  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    dispatch(updatePresentation({ id: presentation.id, updates: { title: e.target.value } }));
-  };
-
-  const handleBackClick = () => {
-    if (isTemplatePreview) {
-      setShowExitWarning(true);
-    } else {
-      navigate('/');
-    }
-  };
-
-  const handleSaveClick = async () => {
-    if (isTemplatePreview) {
-      try {
-        const { id, isTemplatePreview: _, ...presentationData } = presentation as any;
-        const newPresentation = await createPresentation(presentationData).unwrap();
-        dispatch(deletePresentation(presentation.id));
-        dispatch(addPresentation(newPresentation));
-        toast.success("Template saved as your presentation!");
-        navigate(`/editor/${newPresentation.id}`);
-      } catch (error: any) {
-        toast.error(error.message || "Failed to save presentation");
-      }
-    } else {
-      // Logic to save an existing presentation if needed
-      toast.success("Saved successfully");
-    }
-  };
-
-  const handleExitWithoutSaving = () => {
-    dispatch(deletePresentation(presentation.id));
-    setShowExitWarning(false);
-    navigate('/');
-  };
-
-  const handleSaveAndExit = async () => {
-    await handleSaveClick();
-    navigate('/');
-  };
-
-  const handleAddFirstSlide = () => {
-    const newSlide: ContentSlide = {
-      id: nanoid(),
-      type: 'content',
-      title: 'Welcome',
-      subtitle: 'Click to edit',
-      content: 'Start adding content to your presentation',
-      layout: 'center',
-      theme: presentation.theme || DEFAULT_THEME,
-      settings: {},
-      order: 0,
-    };
-    dispatch(addSlide({ presentationId: presentation.id, slide: newSlide }));
-    dispatch(setSelectedSlide(newSlide.id));
-  };
-
   return (
-    <div className="flex h-screen flex-col bg-[#eeeeee]">
+    <div className="flex h-screen flex-col bg-[#eeeeee] dark:bg-background">
       <EditorToolbar
         title={presentation.title}
         presentationId={presentation.id}
+        joinCode={presentation.joinCode}
         onTitleChange={handleTitleChange}
         onBackClick={handleBackClick}
         onSaveClick={handleSaveClick}
         isSaving={isSaving}
+        onEnhanceSubmit={handleEnhance}
+        isEnhancing={isEnhancing}
+        enhanceReasoning={enhanceReasoning}
       />
 
       <div className="flex flex-1 overflow-x-hidden">
@@ -308,7 +288,7 @@ export default function Editor() {
               Exit without saving
             </Button>
             <div className="flex gap-2">
-              <Button variant="secondary" onClick={() => setShowExitWarning(false)}>
+              <Button className='bg-secondary' onClick={() => setShowExitWarning(false)}>
                 Cancel
               </Button>
               <Button onClick={handleSaveAndExit} disabled={isSaving}>

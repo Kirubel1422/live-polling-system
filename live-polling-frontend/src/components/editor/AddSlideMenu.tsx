@@ -12,8 +12,8 @@ import {
   DropdownMenuTrigger,
   DropdownMenuGroup,
 } from '@/components/ui/dropdown-menu';
-import { SlideType, Slide } from '@/types/presentation';
-import { AddSlideMenuProps } from './types';
+import { type SlideType, type Slide } from '@/types/presentation';
+import { type AddSlideMenuProps } from './types';
 import { SLIDE_TEMPLATES } from './data.const';
 import { createSlideByType } from './hooks';
 

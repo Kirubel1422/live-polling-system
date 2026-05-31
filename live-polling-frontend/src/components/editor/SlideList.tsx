@@ -6,7 +6,7 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  DragEndEvent,
+  type DragEndEvent,
 } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -18,7 +18,7 @@ import { useAppDispatch } from '@/store/hooks';
 import { reorderSlides } from '@/store/presentationsSlice';
 import { setSelectedSlide } from '@/store/editorSlice';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { SlideListProps } from './types';
+import { type SlideListProps } from './types';
 import SlideThumbnail from './SlideThumbnail';
 import { useReorderSlidesMutation } from "@/api/presentations.api";
 

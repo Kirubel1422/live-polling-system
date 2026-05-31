@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import { SlideThumbnailProps } from './types';
+import { type SlideThumbnailProps } from './types';
 import { renderSlideContent } from './SlideCanvas';
 
 /** UUID v4 regex — slides that exist in the DB always have this format. */

@@ -12,7 +12,7 @@ import {
   Palette,
   Settings,
 } from 'lucide-react';
-import { SlideType } from '@/types/presentation';
+import { type SlideType } from '@/types/presentation';
 
 // From AddSlideMenu.tsx
 export const SLIDE_TEMPLATES = [

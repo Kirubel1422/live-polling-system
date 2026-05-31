@@ -63,7 +63,7 @@ export function InlineTextEdit({
           types: ["heading", "paragraph"],
         }),
         Placeholder.configure({
-          placeholder: placeholder || "Type something...",
+          placeholder: isEditable ? (placeholder || "Type something...") : "",
           emptyEditorClass: "is-editor-empty",
         }),
         TextStyle,
