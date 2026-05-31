@@ -1,6 +1,6 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit'
-import { nanoid } from 'nanoid'
-import { Presentation, Slide, DEFAULT_THEME } from '@/types/presentation'
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
+
+import { type Presentation, type Slide, DEFAULT_THEME } from '@/types/presentation'
 
 interface PresentationsState {
   items: Presentation[]
@@ -18,7 +18,7 @@ const presentationsSlice = createSlice({
   reducers: {
     addPresentation: (state, action: PayloadAction<Partial<Presentation>>) => {
       const newPresentation: Presentation = {
-        id: action.payload.id || nanoid(),
+        id: action.payload.id || crypto.randomUUID(),
         title: action.payload.title || 'Untitled Presentation',
         description: action.payload.description || '',
         slides: action.payload.slides || [],
@@ -27,6 +27,7 @@ const presentationsSlice = createSlice({
         status: action.payload.status || 'draft',
         theme: action.payload.theme || DEFAULT_THEME,
         isAIGenerated: action.payload.isAIGenerated || false,
+        joinCode: action.payload.joinCode || ""
       }
       state.items.unshift(newPresentation)
     },
@@ -51,13 +52,13 @@ const presentationsSlice = createSlice({
       if (original) {
         const duplicate: Presentation = {
           ...original,
-          id: nanoid(),
+          id: crypto.randomUUID(),
           title: `${original.title} (Copy)`,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           slides: original.slides.map((slide) => ({
             ...slide,
-            id: nanoid(),
+            id: crypto.randomUUID(),
           })),
         }
         state.items.unshift(duplicate)
@@ -73,7 +74,7 @@ const presentationsSlice = createSlice({
       if (presentation) {
         const newSlide = {
           ...action.payload.slide,
-          id: nanoid(),
+          id: crypto.randomUUID(),
           order: presentation.slides.length,
         }
         if (action.payload.index !== undefined) {
@@ -176,7 +177,7 @@ const presentationsSlice = createSlice({
           const originalSlide = presentation.slides[slideIndex]
           const duplicateSlide = {
             ...originalSlide,
-            id: nanoid(),
+            id: crypto.randomUUID(),
             order: slideIndex + 1,
           }
           presentation.slides.splice(slideIndex + 1, 0, duplicateSlide)
