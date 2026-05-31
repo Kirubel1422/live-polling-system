@@ -76,7 +76,7 @@ export default function RecentPresentations({
   }
   return (
     <section>
-      <div className="mb-4 flex items-center justify-between">
+      <div className="fi mb-4 flex items-center justify-between" style={{ animationDelay: "0.50s" }}>
         <h2 className="text-lg font-semibold">Your Presentations</h2>
         <div className="flex items-center gap-3">
           <span className="text-sm text-muted-foreground">
@@ -106,7 +106,7 @@ export default function RecentPresentations({
       </div>
 
       {totalPresentations === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-16">
+        <div className="fi flex flex-col items-center justify-center rounded-xl border border-dashed py-16" style={{ animationDelay: "0.56s" }}>
           <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-muted">
             <Plus className="size-8 text-muted-foreground" />
           </div>
@@ -137,15 +137,16 @@ export default function RecentPresentations({
                   Array.isArray(rawPresentation.slides) &&
                   rawPresentation.slides.length > 0,
               )
-              .map((presentation) => (
+              .map((presentation, index) => (
                 <Card
                   key={presentation.id}
                   className={cn(
-                    "group cursor-pointer overflow-hidden transition-all duration-300",
+                    "fi group cursor-pointer overflow-hidden transition-all duration-300",
                     viewMode === "grid"
                       ? "rounded-none py-0 border-none shadow-none"
                       : "flex items-start border border-border/50 bg-card rounded-xl"
                   )}
+                  style={{ animationDelay: `${0.56 + index * 0.06}s` }}
                   onClick={() => handleOpenPresentation(presentation.id)}
                 >
                   <div

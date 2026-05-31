@@ -30,17 +30,18 @@ export default function TemplatesList({
 
   return (
     <section className="mb-12">
-      <div className="mb-4 flex items-center justify-between">
+      <div className="fi mb-4 flex items-center justify-between" style={{ animationDelay: "0.12s" }}>
         <h2 className="text-lg font-semibold">Start with a Template</h2>
         <Button variant="ghost" size="sm">
           View all
         </Button>
       </div>
       <div className="grid bg-primary/10 rounded-2xl p-7 grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
-        {templates.map((template) => (
+        {templates.map((template, index) => (
           <Card
             key={template.id}
-            className="group -space-y-6 cursor-pointer overflow-hidden border-none py-0 transition-all shadow-none"
+            className="fi group -space-y-6 cursor-pointer overflow-hidden border-none py-0 transition-all shadow-none"
+            style={{ animationDelay: `${0.18 + index * 0.06}s` }}
             onClick={() => handleCreateFromTemplate(template)}
           >
             <div
