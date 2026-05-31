@@ -1,4 +1,4 @@
-import { Slide } from "./presentation";
+import { type Slide } from "./presentation";
 
 export interface ITemplate {
   id: string;

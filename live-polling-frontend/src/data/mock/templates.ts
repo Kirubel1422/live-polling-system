@@ -1,4 +1,4 @@
-import { ITemplate } from "@/types";
+import { type ITemplate } from "@/types";
 import { nanoid } from "nanoid";
 
 const defaultTheme = {
