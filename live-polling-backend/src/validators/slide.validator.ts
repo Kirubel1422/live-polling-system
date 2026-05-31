@@ -24,10 +24,10 @@ export const SlideSettingsSchema = zod.object({
 export const SlideOptionSchema = zod.object({
   id: zod.string(),
   text: zod.string().min(1, "Option text is required"),
-  isCorrect: zod.boolean().optional(),
-  color: zod.string().optional(),
-  imageUrl: zod.string().url("Invalid image URL").optional(),
-  votes: zod.number().int().min(0).optional(),
+  isCorrect: zod.boolean().nullish(),
+  color: zod.string().nullish(),
+  imageUrl: zod.string().url("Invalid image URL").nullish(),
+  votes: zod.number().int().min(0).nullish(),
 });
 
 // ── Type-specific meta schemas ────────────────────────────────────────────────
@@ -139,6 +139,7 @@ export const SLIDE_TYPES = [
 
 export const CreateSlideSchema = zod.object({
   body: zod.object({
+    id: zod.string().uuid().optional(),
     type: zod.enum(SLIDE_TYPES),
     title: zod.string().min(1, "Slide title is required").max(300),
     subtitle: zod.string().max(500).optional(),

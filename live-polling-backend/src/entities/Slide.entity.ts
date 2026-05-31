@@ -77,7 +77,7 @@ export class SlideEntity {
   title!: string;
 
   @Column({ nullable: true, type: "text" })
-  subtitle?: string;
+  subtitle?: string | null;
 
   /** Position in the slide deck (0-based) */
   @Column({ type: "int", default: 0 })

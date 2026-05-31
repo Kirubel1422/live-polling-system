@@ -36,10 +36,10 @@ export class PresentationEntity {
   title!: string;
 
   @Column({ nullable: true, type: "text" })
-  description?: string;
+  description?: string | null;
 
-  @Column({ nullable: true })
-  thumbnail?: string;
+  @Column({ type: "varchar", nullable: true })
+  thumbnail?: string | null;
 
   @Column({ type: "varchar", default: "draft" })
   status!: PresentationStatus;
@@ -55,8 +55,8 @@ export class PresentationEntity {
    * Short alphanumeric join code for participants.
    * Generated when the presentation is published/live.
    */
-  @Column({ nullable: true, unique: true })
-  joinCode?: string;
+  @Column({ type: "varchar", nullable: true, unique: true })
+  joinCode?: string | null;
 
   /** Whether this presentation was generated via AI */
   @Column({ default: false })
@@ -88,10 +88,10 @@ export class PresentationEntity {
   /** The template this presentation was created from, if any */
   @ManyToOne(() => TemplateEntity, { nullable: true, onDelete: "SET NULL" })
   @JoinColumn({ name: "template_id" })
-  template?: TemplateEntity;
+  template?: TemplateEntity | null;
 
-  @Column({ nullable: true })
-  templateId?: string;
+  @Column({ type: "uuid", nullable: true })
+  templateId?: string | null;
 
   @CreateDateColumn()
   createdAt!: Date;

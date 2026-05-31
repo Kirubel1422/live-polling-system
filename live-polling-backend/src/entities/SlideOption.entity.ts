@@ -21,16 +21,16 @@ export class SlideOptionEntity {
   text!: string;
 
   /** For quiz slides — marks the correct answer */
-  @Column({ nullable: true })
-  isCorrect?: boolean;
+  @Column({ type: "boolean", nullable: true })
+  isCorrect?: boolean | null;
 
   /** Display color (hex string) */
-  @Column({ nullable: true })
-  color?: string;
+  @Column({ type: "varchar", nullable: true })
+  color?: string | null;
 
   /** For image-choice slides */
-  @Column({ nullable: true })
-  imageUrl?: string;
+  @Column({ type: "varchar", nullable: true })
+  imageUrl?: string | null;
 
   /** Accumulated vote/response count — updated live */
   @Column({ type: "int", default: 0 })

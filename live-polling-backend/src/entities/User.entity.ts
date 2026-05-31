@@ -10,6 +10,7 @@ import {
 import { PresentationEntity } from "./Presentation.entity";
 
 export type UserRole = "presenter" | "participant" | "admin";
+export type AuthProvider = "local" | "google" | "github";
 
 @Entity("users")
 export class UserEntity {
@@ -19,8 +20,14 @@ export class UserEntity {
   @Column({ unique: true })
   email!: string;
 
-  @Column()
-  password!: string;
+  @Column({ nullable: true })
+  password?: string;
+
+  @Column({ type: "varchar", default: "local" })
+  provider!: AuthProvider;
+
+  @Column({ nullable: true })
+  providerId?: string;
 
   @Column({ nullable: true })
   displayName?: string;
@@ -33,6 +40,18 @@ export class UserEntity {
 
   @Column({ default: false })
   isEmailVerified!: boolean;
+
+  @Column({ default: true })
+  emailNotifications!: boolean;
+
+  @Column({ nullable: true })
+  resetPasswordToken?: string;
+
+  @Column({ nullable: true })
+  resetPasswordExpires?: Date;
+
+  @Column({ nullable: true })
+  emailVerificationToken?: string;
 
   @OneToMany(() => PresentationEntity, (p) => p.owner, { lazy: true })
   presentations!: PresentationEntity[];

@@ -24,10 +24,10 @@ const SlideSettingsSchema = zod.object({
 const SlideOptionSchema = zod.object({
   id: zod.string(),
   text: zod.string(),
-  isCorrect: zod.boolean().optional(),
-  color: zod.string().optional(),
-  imageUrl: zod.string().url().optional(),
-  votes: zod.number().optional(),
+  isCorrect: zod.boolean().nullish(),
+  color: zod.string().nullish(),
+  imageUrl: zod.string().url().nullish(),
+  votes: zod.number().nullish(),
 });
 
 const SlideSchema = zod.object({
@@ -49,7 +49,7 @@ const SlideSchema = zod.object({
     "wheel-of-names",
   ]),
   title: zod.string().min(1, "Slide title is required"),
-  subtitle: zod.string().optional(),
+  subtitle: zod.string().nullish(),
   theme: SlideThemeSchema,
   settings: SlideSettingsSchema.default({}),
   order: zod.number().int().min(0),
@@ -64,11 +64,11 @@ const SlideSchema = zod.object({
 export const CreatePresentationSchema = zod.object({
   body: zod.object({
     title: zod.string().min(1, "Title is required").max(200),
-    description: zod.string().max(1000).optional(),
-    thumbnail: zod.string().url().optional(),
+    description: zod.string().max(1000).nullish(),
+    thumbnail: zod.string().url().nullish(),
     status: zod.enum(["draft", "published", "archived"]).default("draft"),
     theme: SlideThemeSchema,
-    templateId: zod.string().optional(),
+    templateId: zod.string().nullish(),
     isAIGenerated: zod.boolean().default(false),
     slides: zod.array(SlideSchema).default([]),
   }),
@@ -77,11 +77,11 @@ export const CreatePresentationSchema = zod.object({
 export const UpdatePresentationSchema = zod.object({
   body: zod.object({
     title: zod.string().min(1).max(200).optional(),
-    description: zod.string().max(1000).optional(),
-    thumbnail: zod.string().url().optional(),
+    description: zod.string().max(1000).nullish(),
+    thumbnail: zod.string().url().nullish(),
     status: zod.enum(["draft", "published", "archived"]).optional(),
     theme: SlideThemeSchema.optional(),
-    templateId: zod.string().optional(),
+    templateId: zod.string().nullish(),
     slides: zod.array(SlideSchema).optional(),
   }),
 });
