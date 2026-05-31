@@ -20,7 +20,7 @@ services:
 
   backend:
     build:
-      context: ./live-polling-backend
+      context: https://github.com/Kirubel1422/live-polling-system.git#main:live-polling-backend
       dockerfile: Dockerfile
     container_name: live-polling-backend
     ports:
@@ -59,13 +59,13 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    volumes:
-      - ./live-polling-backend:/app
-      - /app/node_modules
+    # volumes:
+    #   - ./live-polling-backend:/app
+    #   - /app/node_modules
 
   frontend:
     build:
-      context: ./live-polling-frontend
+      context: https://github.com/Kirubel1422/live-polling-system.git#main:live-polling-frontend
       dockerfile: Dockerfile
     container_name: live-polling-frontend
     ports:
@@ -74,9 +74,9 @@ services:
       - VITE_API_URL=http://localhost:5000/api
     depends_on:
       - backend
-    volumes:
-      - ./live-polling-frontend:/app
-      - /app/node_modules
+    # volumes:
+    #   - ./live-polling-frontend:/app
+    #   - /app/node_modules
 
 volumes:
   postgres_data:

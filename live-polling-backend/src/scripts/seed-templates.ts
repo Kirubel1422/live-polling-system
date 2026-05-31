@@ -436,6 +436,11 @@ const mockTemplates = [
 
 const seedTemplates = async () => {
   await connectDatabase();
+  
+  // Force synchronization to ensure tables exist
+  logger.info("Synchronizing database schema...");
+  await AppDataSource.synchronize(false);
+
   const repo = AppDataSource.getRepository(TemplateEntity);
 
   logger.info("Checking for existing templates...");
