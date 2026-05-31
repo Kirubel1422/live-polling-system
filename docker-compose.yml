@@ -31,7 +31,7 @@ services:
       - CLIENT_URL=http://localhost:5173
       - DB_HOST=db
       - DB_PORT=5432
-      - DB_USERNAME=postgres
+      - DB_USERNAME=live_polling
       - DB_PASSWORD=postgres
       - DB_NAME=live_polling
       - JWT_SECRET=testsecret123
@@ -41,6 +41,21 @@ services:
       - AI_MODEL_NAME=openrouter/owl-alpha
       # Uncomment and add your OpenRouter key to test AI generation
       # - AI_API_KEY=your_openrouter_api_key
+      # OAuth - Google
+      # - GOOGLE_CLIENT_ID=yourgoogleclientid
+      # - GOOGLE_CLIENT_SECRET=yourgoogleclientsecret
+      # OAuth - GitHub
+      # - GITHUB_CLIENT_ID=yourgithubclientid
+      # - GITHUB_CLIENT_SECRET=yourgithubclientsecret
+      # Cloudinary
+      # - CLOUDINARY_CLOUD_NAME=yourcloudinarycloudname
+      # - CLOUDINARY_API_KEY=yourcloudinaryapikey
+      # - CLOUDINARY_API_SECRET=yourcloudinaryapsecret
+      # Mail delivery
+      # - SMTP_HOST=yoursmtphost
+      # - SMTP_PORT=yoursmtpport
+      # - SMTP_USER=yoursmtpuser
+      # - SMTP_PASS=yoursmtppass
     depends_on:
       db:
         condition: service_healthy
