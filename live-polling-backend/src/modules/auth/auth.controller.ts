@@ -14,6 +14,10 @@ export class AuthController {
     this.login = this.login.bind(this);
     this.logout = this.logout.bind(this);
     this.me = this.me.bind(this);
+    this.oauthCallback = this.oauthCallback.bind(this);
+    this.verifyEmail = this.verifyEmail.bind(this);
+    this.forgotPassword = this.forgotPassword.bind(this);
+    this.resetPassword = this.resetPassword.bind(this);
   }
 
   async register(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -59,7 +63,12 @@ export class AuthController {
 
   async logout(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      res.clearCookie("jwt");
+      res.cookie("jwt", "", {
+        httpOnly: true,
+        secure: ENV.NODE_ENV === "production",
+        sameSite: ENV.NODE_ENV === "production" ? "none" : "lax",
+        expires: new Date(0),
+      });
       res.status(200).json(new ApiResp("Logged out successfully", 200, true));
     } catch (error) {
       next(error);
@@ -69,6 +78,71 @@ export class AuthController {
   async me(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       res.status(200).json(new ApiResp("Current user profile", 200, true, { user: req.user }));
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /** Shared callback for Google/GitHub OAuth — sets JWT cookie and redirects to frontend */
+  async oauthCallback(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const user = req.user as Partial<UserEntity>;
+      const { password, ...userWithoutPassword } = user as any;
+
+      const token = this.authService.generateToken(userWithoutPassword);
+
+      res.cookie("jwt", token, {
+        httpOnly: true,
+        secure: ENV.NODE_ENV === "production",
+        sameSite: ENV.NODE_ENV === "production" ? "none" : "lax",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+
+      // Redirect to the frontend after successful OAuth
+      const clientUrl = ENV.CLIENT_URL[0]; // first allowed origin
+      res.redirect(clientUrl);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async verifyEmail(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { token } = req.query;
+      if (!token || typeof token !== "string") {
+        res.status(400).json(new ApiResp("Token is required", 400, false));
+        return;
+      }
+      await this.authService.verifyEmail(token);
+      res.status(200).json(new ApiResp("Email verified successfully", 200, true));
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async forgotPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { email } = req.body;
+      if (!email) {
+        res.status(400).json(new ApiResp("Email is required", 400, false));
+        return;
+      }
+      await this.authService.forgotPassword(email);
+      res.status(200).json(new ApiResp("If an account exists, a password reset email has been sent", 200, true));
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async resetPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { token, newPassword } = req.body;
+      if (!token || !newPassword) {
+        res.status(400).json(new ApiResp("Token and new password are required", 400, false));
+        return;
+      }
+      await this.authService.resetPassword(token, newPassword);
+      res.status(200).json(new ApiResp("Password reset successfully", 200, true));
     } catch (error) {
       next(error);
     }
