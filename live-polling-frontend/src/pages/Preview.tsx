@@ -1,6 +1,5 @@
 /** Preview page for presenting a presentation in fullscreen. */
-import { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
   ChevronLeft,
   ChevronRight,
@@ -10,7 +9,6 @@ import {
   Users,
   QrCode,
 } from "lucide-react";
-import { useAppSelector } from "@/store/hooks";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -21,42 +19,28 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import {
-  Slide,
-  MultipleChoiceSlide,
-  OpenEndedSlide,
-  QuizSlide,
-  ContentSlide,
-} from "@/types/presentation";
+import type { Slide } from "@/types/presentation";
+import { renderSlideContent } from "@/components/editor/SlideCanvas";
+import { QRCodeCanvas } from "qrcode.react";
+import { usePreviewHandlers } from "@/components/preview";
 
 export default function Preview() {
-  const { presentationId } = useParams<{ presentationId: string }>();
-  const navigate = useNavigate();
-
-  const presentation = useAppSelector((state) =>
-    state.presentations.items.find((p) => p.id === presentationId),
-  );
-
-  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
-  const [showPhoneMockup, setShowPhoneMockup] = useState(true);
-
-  // Keyboard navigation
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight" || e.key === " ") {
-        e.preventDefault();
-        goToNextSlide();
-      } else if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        goToPrevSlide();
-      } else if (e.key === "Escape") {
-        navigate(`/editor/${presentationId}`);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [currentSlideIndex, presentation]);
+  const {
+    presentationId,
+    presentation,
+    currentSlideIndex,
+    showPhoneMockup,
+    setShowPhoneMockup,
+    showQRCode,
+    setShowQRCode,
+    participantsCount,
+    slideResponses,
+    presentationUrl,
+    currentSlide,
+    progress,
+    goToNextSlide,
+    goToPrevSlide,
+  } = usePreviewHandlers();
 
   if (!presentation) {
     return (
@@ -65,21 +49,6 @@ export default function Preview() {
       </div>
     );
   }
-
-  const currentSlide = presentation.slides[currentSlideIndex];
-  const progress = ((currentSlideIndex + 1) / presentation.slides.length) * 100;
-
-  const goToNextSlide = () => {
-    if (currentSlideIndex < presentation.slides.length - 1) {
-      setCurrentSlideIndex(currentSlideIndex + 1);
-    }
-  };
-
-  const goToPrevSlide = () => {
-    if (currentSlideIndex > 0) {
-      setCurrentSlideIndex(currentSlideIndex - 1);
-    }
-  };
 
   return (
     <div className="flex h-screen flex-col bg-[#1a1a2e]">
@@ -106,17 +75,18 @@ export default function Preview() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="bg-white/10 text-white/70">
-            <Users className="mr-1 size-3" />0 participants
+          <Badge variant="secondary" className="bg-white/10 text-white/70 dark:bg-black">
+            <Users className="mr-1 size-3" />{participantsCount} participants
           </Badge>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon-sm"
-                className="text-white/70 hover:text-white hover:bg-white/10"
+                className="text-white/70"
+                onClick={() => setShowQRCode(!showQRCode)}
               >
-                <QrCode className="size-4" />
+                <QrCode className="size-4 " />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Show QR Code</TooltipContent>
@@ -152,17 +122,37 @@ export default function Preview() {
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
         {/* Presenter View */}
-        <div className="flex flex-1 flex-col p-6">
+        <div className="flex flex-1 flex-col p-6 relative">
+          
+          {/* QR Code Floating Widget */}
+          {showQRCode && (
+            <div className="absolute top-10 left-10 z-50 flex flex-col items-center p-5 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 transition-all animate-in fade-in zoom-in-95 duration-200">
+              <div className="flex justify-between w-full items-center mb-3 gap-4">
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Join Code</span>
+                  <h3 className="text-xl font-black text-primary tracking-widest">{presentation.joinCode}</h3>
+                </div>
+                <Button variant="ghost" size="icon-sm" onClick={() => setShowQRCode(false)} className="h-8 w-8 hover:bg-gray-100 rounded-full">
+                  <X className="size-4 text-gray-500" />
+                </Button>
+              </div>
+              <div className="p-3 bg-white rounded-xl shadow-sm border border-gray-100">
+                <QRCodeCanvas value={presentationUrl} size={160} level="H" />
+              </div>
+              <p className="mt-4 text-xs font-medium text-gray-500 max-w-[180px] text-center break-words">{presentationUrl}</p>
+            </div>
+          )}
+
           {/* Main Slide */}
           <div className="flex flex-1 items-center justify-center">
-            <div
-              className="h-full w-full rounded-xl shadow-2xl overflow-hidden"
-              style={{
-                backgroundColor: currentSlide?.theme.backgroundColor || "#fff",
-              }}
-            >
-              {currentSlide && <SlideRenderer slide={currentSlide} />}
-            </div>
+              <div
+                className="h-full w-full rounded-xl shadow-2xl overflow-hidden"
+                style={{
+                  backgroundColor: currentSlide?.theme.backgroundColor || "#fff",
+                }}
+              >
+                {currentSlide && <SlideRenderer slide={currentSlide} responses={slideResponses[currentSlide.id] || []} />}
+              </div>
           </div>
 
           {/* Navigation */}
@@ -221,179 +211,13 @@ export default function Preview() {
           </div>
         )}
       </div>
+
     </div>
   );
 }
 
-function SlideRenderer({ slide }: { slide: Slide }) {
-  switch (slide.type) {
-    case "multiple-choice":
-      return <MultipleChoicePresenter slide={slide as MultipleChoiceSlide} />;
-    case "open-ended":
-      return <OpenEndedPresenter slide={slide as OpenEndedSlide} />;
-    case "quiz":
-      return <QuizPresenter slide={slide as QuizSlide} />;
-    case "content":
-      return <ContentPresenter slide={slide as ContentSlide} />;
-    default:
-      return <DefaultPresenter slide={slide} />;
-  }
-}
-
-function MultipleChoicePresenter({ slide }: { slide: MultipleChoiceSlide }) {
-  return (
-    <div className="flex h-full flex-col p-8">
-      <div className="mb-6 text-center">
-        <h2
-          className="text-4xl font-bold mb-2"
-          style={{ color: slide.theme.textColor }}
-          dangerouslySetInnerHTML={{ __html: slide.title }}
-        />
-        {slide.subtitle && (
-          <p
-            className="text-xl opacity-70"
-            style={{ color: slide.theme.textColor }}
-            dangerouslySetInnerHTML={{ __html: slide.subtitle }}
-          />
-        )}
-      </div>
-      <div className="grid flex-1 grid-cols-2 gap-4">
-        {slide.options.map((option, index) => (
-          <div
-            key={option.id}
-            className="flex items-center justify-center rounded-2xl p-6 text-xl font-semibold text-white"
-            style={{ backgroundColor: option.color }}
-          >
-            <span className="mr-4 flex size-10 items-center justify-center rounded-full bg-white/20">
-              {String.fromCharCode(65 + index)}
-            </span>
-            {option.text}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function OpenEndedPresenter({ slide }: { slide: OpenEndedSlide }) {
-  return (
-    <div className="flex h-full flex-col items-center justify-center p-8 text-center">
-      <h2
-        className="text-4xl font-bold mb-4"
-        style={{ color: slide.theme.textColor }}
-        dangerouslySetInnerHTML={{ __html: slide.title }}
-      />
-      {slide.subtitle && (
-        <p
-          className="text-xl mb-8 opacity-70"
-          style={{ color: slide.theme.textColor }}
-          dangerouslySetInnerHTML={{ __html: slide.subtitle }}
-        />
-      )}
-      <div
-        className="w-full max-w-2xl rounded-2xl border-2 border-dashed p-12"
-        style={{ borderColor: slide.theme.accentColor + "60" }}
-      >
-        <p className="text-lg text-muted-foreground">
-          Waiting for responses...
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function QuizPresenter({ slide }: { slide: QuizSlide }) {
-  return (
-    <div className="flex h-full flex-col p-8">
-      <div className="mb-4 flex items-center justify-between">
-        <Badge
-          className="text-base px-4 py-1"
-          style={{
-            backgroundColor: slide.theme.accentColor,
-            color: "#fff",
-          }}
-        >
-          {slide.points} points
-        </Badge>
-        <Badge
-          variant="outline"
-          className="text-base px-4 py-1"
-          style={{
-            borderColor: slide.theme.accentColor,
-            color: slide.theme.accentColor,
-          }}
-        >
-          {slide.timeLimit} seconds
-        </Badge>
-      </div>
-      <div className="mb-6 text-center">
-        <h2
-          className="text-4xl font-bold"
-          style={{ color: slide.theme.textColor }}
-          dangerouslySetInnerHTML={{ __html: slide.title }}
-        />
-      </div>
-      <div className="grid flex-1 grid-cols-2 gap-4">
-        {slide.options.map((option, index) => (
-          <div
-            key={option.id}
-            className="flex items-center justify-center rounded-2xl p-6 text-xl font-semibold text-white"
-            style={{ backgroundColor: option.color }}
-          >
-            <span className="mr-4 flex size-10 items-center justify-center rounded-full bg-white/20">
-              {String.fromCharCode(65 + index)}
-            </span>
-            {option.text}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ContentPresenter({ slide }: { slide: ContentSlide }) {
-  return (
-    <div className="flex h-full flex-col items-center justify-center p-12 text-center">
-      <h2
-        className="text-5xl font-bold mb-6"
-        style={{ color: slide.theme.textColor }}
-        dangerouslySetInnerHTML={{ __html: slide.title }}
-      />
-      {slide.subtitle && (
-        <p
-          className="text-2xl mb-8 opacity-70"
-          style={{ color: slide.theme.textColor }}
-          dangerouslySetInnerHTML={{ __html: slide.subtitle }}
-        />
-      )}
-      {slide.content && (
-        <p
-          className="text-xl max-w-3xl opacity-80 leading-relaxed"
-          style={{ color: slide.theme.textColor }}
-          dangerouslySetInnerHTML={{ __html: slide.content }}
-        />
-      )}
-    </div>
-  );
-}
-
-function DefaultPresenter({ slide }: { slide: Slide }) {
-  return (
-    <div className="flex h-full flex-col items-center justify-center p-12 text-center">
-      <h2
-        className="text-5xl font-bold mb-6"
-        style={{ color: slide.theme.textColor }}
-        dangerouslySetInnerHTML={{ __html: slide.title }}
-      />
-      {slide.subtitle && (
-        <p
-          className="text-2xl opacity-70"
-          style={{ color: slide.theme.textColor }}
-          dangerouslySetInnerHTML={{ __html: slide.subtitle }}
-        />
-      )}
-    </div>
-  );
+function SlideRenderer({ slide, responses }: { slide: Slide; responses: any[] }) {
+  return <>{renderSlideContent(slide, false, undefined, true, responses)}</>;
 }
 
 function PhoneSlideView({ slide }: { slide: Slide }) {
@@ -401,64 +225,214 @@ function PhoneSlideView({ slide }: { slide: Slide }) {
     switch (slide.type) {
       case "multiple-choice":
       case "quiz":
-        const optionSlide = slide as MultipleChoiceSlide | QuizSlide;
+      case "image-choice":
+        const optionSlide = slide as any;
         return (
           <div className="flex h-full flex-col p-4">
-            <h3
-              className="mb-4 text-center text-sm font-semibold"
-              dangerouslySetInnerHTML={{ __html: slide.title }}
-            />
-            <div className="flex flex-1 flex-col gap-2">
-              {optionSlide.options.map((option, index) => (
+            <h3 className="mb-4 text-center text-sm font-semibold" dangerouslySetInnerHTML={{ __html: slide.title }} />
+            <div className="flex flex-1 flex-col gap-2 overflow-y-auto">
+              {optionSlide.options?.map((option: any, index: number) => (
                 <button
                   key={option.id}
-                  className="flex items-center rounded-lg p-3 text-left text-xs font-medium text-white"
-                  style={{ backgroundColor: option.color }}
+                  className="flex items-center rounded-lg p-3 text-left text-xs font-medium text-white transition-opacity hover:opacity-90"
+                  style={{ backgroundColor: option.color || slide.theme.accentColor }}
                 >
-                  <span className="mr-2 flex size-5 items-center justify-center rounded-full bg-white/20 text-[10px]">
+                  <span className="mr-2 flex size-5 shrink-0 items-center justify-center rounded-full bg-white/20 text-[10px]">
                     {String.fromCharCode(65 + index)}
                   </span>
-                  {option.text}
+                  {option.text || `Option ${index + 1}`}
                 </button>
               ))}
             </div>
-            <Button className="mt-4 w-full" size="sm">
+            <Button className="mt-4 w-full shrink-0" size="sm" style={{ backgroundColor: slide.theme.accentColor, color: "#fff" }}>
               Submit
             </Button>
           </div>
         );
 
       case "open-ended":
+      case "word-cloud":
         return (
           <div className="flex h-full flex-col p-4">
-            <h3
-              className="mb-4 text-center text-sm font-semibold"
-              dangerouslySetInnerHTML={{ __html: slide.title }}
-            />
+            <h3 className="mb-4 text-center text-sm font-semibold" dangerouslySetInnerHTML={{ __html: slide.title }} />
             <div className="flex-1">
               <textarea
-                className="h-32 w-full rounded-lg border p-3 text-sm"
-                placeholder={(slide as OpenEndedSlide).placeholder}
+                className="h-32 w-full rounded-lg border p-3 text-sm focus:outline-none focus:ring-2"
+                style={{ 
+                  backgroundColor: "rgba(255,255,255,0.1)", 
+                  borderColor: slide.theme.accentColor + "40", 
+                  color: slide.theme.textColor,
+                  '--tw-ring-color': slide.theme.accentColor 
+                } as any}
+                placeholder={(slide as any).placeholder || "Type your answer..."}
               />
             </div>
-            <Button className="mt-4 w-full" size="sm">
+            <Button className="mt-4 w-full" size="sm" style={{ backgroundColor: slide.theme.accentColor, color: "#fff" }}>
               Submit
             </Button>
           </div>
         );
 
+      case "rating":
+        const meta = (slide as any).meta || {};
+        const ratingType = (slide as any).ratingType || meta.ratingType || "stars";
+        const maxValue = (slide as any).maxValue ?? meta.maxValue ?? 5;
+        const minValue = (slide as any).minValue ?? meta.minValue ?? 1;
+        const maxLabel = (slide as any).maxLabel || meta.maxLabel;
+        const minLabel = (slide as any).minLabel || meta.minLabel;
+
+        const renderMobileRating = () => {
+          switch (ratingType) {
+            case "stars":
+              return (
+                <div className="flex gap-2 mb-8">
+                  {Array.from({ length: maxValue }).map((_, i) => (
+                    <svg key={i} className="w-8 h-8 opacity-40 hover:opacity-100 transition-opacity" style={{ color: slide.theme.accentColor }} fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  ))}
+                </div>
+              );
+            case "emoji":
+              const emojis = ["😡", "😕", "😐", "🙂", "😊"];
+              return (
+                <div className="flex gap-2 mb-8">
+                  {emojis.slice(0, maxValue).map((emoji, i) => (
+                    <button key={i} className="text-2xl transition-transform hover:scale-125">{emoji}</button>
+                  ))}
+                </div>
+              );
+            case "nps":
+              return (
+                <div className="flex gap-1 flex-wrap justify-center mb-8">
+                  {Array.from({ length: 11 }).map((_, i) => (
+                    <button key={i} className="w-8 h-8 rounded text-xs font-medium" style={{ backgroundColor: slide.theme.textColor + "10", color: slide.theme.textColor }}>{i}</button>
+                  ))}
+                </div>
+              );
+            case "slider":
+              return (
+                <div className="w-full mb-8">
+                  <input type="range" className="w-full accent-current" style={{ color: slide.theme.accentColor }} min={minValue} max={maxValue} defaultValue={Math.floor((minValue + maxValue) / 2)} />
+                  <div className="flex justify-between w-full mt-2 text-[10px] opacity-70">
+                    <span>{minLabel || minValue}</span>
+                    <span>{maxLabel || maxValue}</span>
+                  </div>
+                </div>
+              );
+            default:
+              return (
+                <div className="flex gap-2 mb-8">
+                  {Array.from({ length: maxValue - minValue + 1 }).map((_, i) => (
+                    <button key={i} className="w-10 h-10 rounded-lg text-sm font-medium" style={{ backgroundColor: slide.theme.textColor + "10", color: slide.theme.textColor }}>{minValue + i}</button>
+                  ))}
+                </div>
+              );
+          }
+        };
+
+        return (
+          <div className="flex h-full flex-col p-4 items-center justify-center text-center">
+            <h3 className="mb-8 text-sm font-semibold" dangerouslySetInnerHTML={{ __html: slide.title }} />
+            {renderMobileRating()}
+            <Button className="mt-4 w-full" size="sm" style={{ backgroundColor: slide.theme.accentColor, color: "#fff" }}>Submit</Button>
+          </div>
+        );
+
+      case "scales":
+        const scalesMeta = (slide as any).meta || {};
+        const steps = (slide as any).steps ?? scalesMeta.steps ?? 5;
+        const scalesLabels = (slide as any).scaleLabels || scalesMeta.scaleLabels;
+        const scalesLeftLabel = Array.isArray(scalesLabels) ? scalesLabels[0] : scalesLabels?.left || "Strongly Disagree";
+        const scalesRightLabel = Array.isArray(scalesLabels) ? scalesLabels[scalesLabels.length - 1] : scalesLabels?.right || "Strongly Agree";
+
+        return (
+          <div className="flex h-full flex-col p-4 items-center justify-center text-center">
+            <h3 className="mb-8 text-sm font-semibold" dangerouslySetInnerHTML={{ __html: slide.title }} />
+            <div className="flex justify-between w-full mb-4 gap-1">
+              {Array.from({ length: steps }).map((_, i) => (
+                <button
+                  key={i}
+                  className="size-8 rounded-full text-xs font-medium transition-all"
+                  style={{
+                    backgroundColor: i + 1 === Math.floor(steps / 2) + 1 ? slide.theme.accentColor : "rgba(255,255,255,0.1)",
+                    color: i + 1 === Math.floor(steps / 2) + 1 ? "#fff" : slide.theme.textColor,
+                  }}
+                >
+                  {i + 1}
+                </button>
+              ))}
+            </div>
+            <div className="flex justify-between w-full mt-2 text-[10px] opacity-70">
+              <span>{scalesLeftLabel}</span>
+              <span>{scalesRightLabel}</span>
+            </div>
+            <Button className="mt-8 w-full" size="sm" style={{ backgroundColor: slide.theme.accentColor, color: "#fff" }}>Submit</Button>
+          </div>
+        );
+
+      case "ranking":
+      case "100-points":
+        const listSlide = slide as any;
+        return (
+          <div className="flex h-full flex-col p-4">
+            <h3 className="mb-4 text-center text-sm font-semibold" dangerouslySetInnerHTML={{ __html: slide.title }} />
+            <div className="flex flex-1 flex-col gap-2 overflow-y-auto">
+              {(listSlide.items || listSlide.options)?.map((item: any, i: number) => (
+                <div key={item.id || i} className="flex items-center p-3 rounded border" style={{ borderColor: slide.theme.accentColor + "40", backgroundColor: "rgba(255,255,255,0.05)" }}>
+                  <div className="flex-1 text-xs">{item.text || `Item ${i+1}`}</div>
+                  <div className="w-12 h-6 rounded bg-black/20 flex items-center justify-center text-[10px]">
+                    {slide.type === "100-points" ? "0" : `#${i+1}`}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <Button className="mt-4 w-full shrink-0" size="sm" style={{ backgroundColor: slide.theme.accentColor, color: "#fff" }}>Submit</Button>
+          </div>
+        );
+
+      case "number":
+        return (
+          <div className="flex h-full flex-col p-4 items-center justify-center">
+            <h3 className="mb-6 text-center text-sm font-semibold" dangerouslySetInnerHTML={{ __html: slide.title }} />
+            <input type="number" className="w-full text-center text-2xl p-4 rounded-lg border-2 focus:outline-none" style={{ backgroundColor: "rgba(255,255,255,0.1)", borderColor: slide.theme.accentColor, color: slide.theme.textColor }} placeholder="0" />
+            <Button className="mt-8 w-full" size="sm" style={{ backgroundColor: slide.theme.accentColor, color: "#fff" }}>Submit</Button>
+          </div>
+        );
+        
+      case "qa":
+        return (
+          <div className="flex h-full flex-col p-4">
+            <h3 className="mb-4 text-center text-sm font-semibold" dangerouslySetInnerHTML={{ __html: slide.title }} />
+            <textarea className="w-full h-20 p-2 text-xs rounded border mb-4 focus:outline-none" style={{ backgroundColor: "rgba(255,255,255,0.1)", borderColor: slide.theme.accentColor + "40", color: slide.theme.textColor }} placeholder="Ask a question..." />
+            <Button className="w-full mb-4 shrink-0" size="sm" style={{ backgroundColor: slide.theme.accentColor, color: "#fff" }}>Submit Question</Button>
+            <div className="flex-1 border-t pt-4 overflow-y-auto" style={{ borderColor: slide.theme.textColor + "20" }}>
+              <p className="text-[10px] text-center opacity-50">No questions asked yet.</p>
+            </div>
+          </div>
+        );
+        
+      case "wheel-of-names":
+        return (
+          <div className="flex h-full flex-col p-4 items-center justify-center text-center">
+            <h3 className="mb-8 text-sm font-semibold" dangerouslySetInnerHTML={{ __html: slide.title }} />
+            <div className="w-32 h-32 rounded-full border-4 flex items-center justify-center mb-8" style={{ borderColor: slide.theme.accentColor, backgroundColor: "rgba(255,255,255,0.05)" }}>
+              <span className="text-[10px] opacity-70">Waiting for spin...</span>
+            </div>
+          </div>
+        );
+
+      case "content":
+      case "pin-on-image":
       default:
         return (
-          <div className="flex h-full flex-col items-center justify-center p-4 text-center">
-            <h3
-              className="text-sm font-semibold"
-              dangerouslySetInnerHTML={{ __html: slide.title }}
-            />
+          <div className="flex h-full flex-col items-center justify-center p-6 text-center">
+            <h3 className="text-sm font-bold leading-relaxed" dangerouslySetInnerHTML={{ __html: slide.title }} />
             {slide.subtitle && (
-              <p
-                className="mt-2 text-xs text-muted-foreground"
-                dangerouslySetInnerHTML={{ __html: slide.subtitle }}
-              />
+              <p className="mt-3 text-[11px] opacity-80" dangerouslySetInnerHTML={{ __html: slide.subtitle }} />
+            )}
+            {(slide as any).content && (
+              <p className="mt-4 text-[10px] opacity-60 line-clamp-6" dangerouslySetInnerHTML={{ __html: (slide as any).content }} />
             )}
           </div>
         );
@@ -467,8 +441,8 @@ function PhoneSlideView({ slide }: { slide: Slide }) {
 
   return (
     <div
-      className="h-full"
-      style={{ backgroundColor: slide.theme.backgroundColor }}
+      className="h-full w-full overflow-hidden"
+      style={{ backgroundColor: slide.theme.backgroundColor, color: slide.theme.textColor }}
     >
       {renderPhoneContent()}
     </div>
