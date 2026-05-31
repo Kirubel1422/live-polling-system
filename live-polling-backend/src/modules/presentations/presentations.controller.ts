@@ -23,6 +23,7 @@ export class PresentationController {
     this.updateTheme = this.updateTheme.bind(this);
     this.reorderSlides = this.reorderSlides.bind(this);
     this.generate = this.generate.bind(this);
+    this.enhance = this.enhance.bind(this);
   }
 
   /** POST /api/presentations */
@@ -178,37 +179,169 @@ export class PresentationController {
       
       const { AIGeneratorService } = await import("src/ai/ai-generator.service");
       const aiService = new AIGeneratorService();
-      const generatedData = await aiService.generatePresentation(prompt);
+
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
+
+      const stream = aiService.generatePresentationStream(prompt);
+      let generatedData: any = null;
+
+      for await (const chunk of stream) {
+        if (chunk.type === "reasoning") {
+          res.write(`data: ${JSON.stringify(chunk)}\n\n`);
+        } else if (chunk.type === "result") {
+          generatedData = chunk.data;
+        }
+      }
+
+      if (!generatedData) {
+        throw new Error("No presentation data returned");
+      }
 
       // Format the AI's output into a CreatePresentationDto
       const crypto = require('crypto');
       const dto: CreatePresentationDto = {
-        title: generatedData.presentation.title || "AI Generated Presentation",
-        description: generatedData.presentation.description,
+        title: generatedData.presentation?.title || "AI Generated Presentation",
+        description: generatedData.presentation?.description,
         isAIGenerated: true,
         status: "draft",
-        theme: generatedData.presentation.theme || {
+        theme: generatedData.presentation?.theme || {
           backgroundColor: "#ffffff",
           textColor: "#000000",
           accentColor: "#0000ff"
         },
-        slides: (generatedData.slides || []).map((slide: any, index: number) => ({
-          ...slide,
-          id: crypto.randomUUID(),
-          order: index,
-          options: (slide.options || []).map((opt: any) => ({
-            ...opt,
-            id: crypto.randomUUID()
-          }))
-        }))
+        slides: (generatedData.slides || []).map((slide: any, index: number) => {
+          const coreFields = ['id', 'type', 'title', 'subtitle', 'theme', 'settings', 'options', 'items'];
+          const meta: any = {};
+          const mappedSlide: any = {};
+          
+          Object.entries(slide).forEach(([key, value]) => {
+            if (coreFields.includes(key)) {
+              mappedSlide[key] = value;
+            } else if (key === 'meta' && typeof value === 'object' && value !== null) {
+              Object.assign(meta, value);
+            } else {
+              meta[key] = value;
+            }
+          });
+
+          return {
+            ...mappedSlide,
+            meta,
+            id: crypto.randomUUID(),
+            order: index,
+            options: (slide.options || slide.items || []).map((opt: any) => ({
+              ...opt,
+              id: crypto.randomUUID()
+            }))
+          };
+        })
       };
 
       const ownerId = (req.user as any)?.id;
       const presentation = await this.presentationService.create(dto, ownerId);
 
-      res.status(201).json(new ApiResp("Presentation generated successfully.", 201, true, presentation));
-    } catch (error) {
-      next(error);
+      res.write(`data: ${JSON.stringify({ type: "presentation", data: presentation })}\n\n`);
+      res.end();
+    } catch (error: any) {
+      if (!res.headersSent) {
+        res.status(500).json(new ApiResp(error.message, 500, false));
+      } else {
+        res.write(`data: ${JSON.stringify({ type: "error", message: error.message })}\n\n`);
+        res.end();
+      }
+    }
+  }
+
+  /** POST /api/presentations/:id/enhance */
+  async enhance(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { prompt, presentationData } = req.body;
+      if (!prompt || !presentationData) {
+        res.status(400).json(new ApiResp("Prompt and presentationData are required.", 400, false));
+        return;
+      }
+      
+      const { AIGeneratorService } = await import("src/ai/ai-generator.service");
+      const aiService = new AIGeneratorService();
+
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
+
+      const stream = aiService.enhancePresentationStream(prompt, presentationData);
+      let generatedData: any = null;
+
+      for await (const chunk of stream) {
+        if (chunk.type === "reasoning") {
+          res.write(`data: ${JSON.stringify(chunk)}\n\n`);
+        } else if (chunk.type === "result") {
+          generatedData = chunk.data;
+        }
+      }
+
+      if (!generatedData) {
+        throw new Error("No presentation data returned");
+      }
+
+      // Format the AI's output into an UpdatePresentationDto
+      const dto: UpdatePresentationDto = {
+        title: generatedData.presentation?.title,
+        description: generatedData.presentation?.description,
+        theme: generatedData.presentation?.theme,
+        slides: (generatedData.slides || []).map((slide: any, index: number) => {
+          const coreFields = ['id', 'type', 'title', 'subtitle', 'theme', 'settings', 'options', 'items'];
+          const meta: any = {};
+          const mappedSlide: any = {};
+          
+          const originalSlide = presentationData.slides?.find((s: any) => s.id === slide.id);
+          const defaultTheme = originalSlide?.theme || presentationData.theme || {
+            backgroundColor: "#ffffff",
+            textColor: "#000000",
+            accentColor: "#0000ff"
+          };
+          
+          Object.entries(slide).forEach(([key, value]) => {
+            if (coreFields.includes(key)) {
+              mappedSlide[key] = value;
+            } else if (key === 'meta' && typeof value === 'object' && value !== null) {
+              Object.assign(meta, value);
+            } else {
+              meta[key] = value;
+            }
+          });
+
+          return {
+            ...mappedSlide,
+            theme: mappedSlide.theme || defaultTheme,
+            meta: { ...originalSlide?.meta, ...meta },
+            id: slide.id,
+            order: index,
+            options: (slide.options || slide.items || []).map((opt: any) => ({
+              ...opt,
+              id: opt.id
+            }))
+          };
+        })
+      };
+
+      const ownerId = (req.user as any)?.id;
+      const presentation = await this.presentationService.update(
+        req.params["id"] as string,
+        dto,
+        ownerId
+      );
+
+      res.write(`data: ${JSON.stringify({ type: "presentation", data: presentation })}\n\n`);
+      res.end();
+    } catch (error: any) {
+      if (!res.headersSent) {
+        res.status(500).json(new ApiResp(error.message, 500, false));
+      } else {
+        res.write(`data: ${JSON.stringify({ type: "error", message: error.message })}\n\n`);
+        res.end();
+      }
     }
   }
 }

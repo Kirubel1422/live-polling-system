@@ -1,6 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { Presentation } from "@/types/presentation";
-import { IResponse } from "@/types/response.types";
+import { type Presentation } from "@/types/presentation";
+import { type IResponse } from "@/types/response.types";
 
 import { ENV } from "@/config/env";
 

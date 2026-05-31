@@ -41,6 +41,12 @@ router.get("/", presentationController.findAll);
 router.post("/generate", presentationController.generate);
 
 /**
+ * POST /api/presentations/:id/enhance
+ * Enhance a presentation using AI.
+ */
+router.post("/:id/enhance", presentationController.enhance);
+
+/**
  * GET /api/presentations/:id
  * Fetch one presentation with all its slides and options.
  */
@@ -72,6 +78,7 @@ router.post("/:id/duplicate", presentationController.duplicate);
 /**
  * PATCH /api/presentations/:id/theme
  * Apply a theme to the presentation and ALL its slides.
+ */
 router.patch("/:id/theme", presentationController.updateTheme);
 
 /**

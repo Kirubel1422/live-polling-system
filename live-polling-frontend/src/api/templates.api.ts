@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { IResponse } from "@/types/response.types";
+import { type IResponse } from "@/types/response.types";
 import { ENV } from "@/config/env";
 
 const API_URL = ENV.API_URL;

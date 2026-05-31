@@ -116,6 +116,7 @@ export class SlideService {
       if (options && options.length > 0) {
         const optionEntities = options.map((opt, idx) =>
           manager.create(SlideOptionEntity, {
+            id: opt.id,
             text: opt.text,
             isCorrect: opt.isCorrect ?? false,
             color: opt.color,
@@ -173,12 +174,16 @@ export class SlideService {
 
     return AppDataSource.manager.transaction(async (manager) => {
       const { options, meta, ...scalarFields } = dto;
+      console.log("SCALAR FIELDS RECIEVED:", scalarFields);
+      console.log("META RECIEVED:", meta);
+      // Update scalar fields manually to guarantee assignment
+      Object.assign(slide, scalarFields);
 
-      // Update scalar fields
-      manager.merge(SlideEntity, slide, {
-        ...scalarFields,
-        ...(meta !== undefined && { meta }),
-      });
+      // Deep merge meta fields safely
+      if (meta !== undefined) {
+        slide.meta = { ...slide.meta, ...meta };
+      }
+
       await manager.save(slide);
 
       // Replace options if provided
@@ -192,9 +197,10 @@ export class SlideService {
           .execute();
 
         // Re-insert
-        if (options.length > 0) {
+        if (options && options.length > 0) {
           const optionEntities = options.map((opt, idx) =>
             manager.create(SlideOptionEntity, {
+              id: opt.id,
               text: opt.text,
               isCorrect: opt.isCorrect ?? false,
               color: opt.color,
@@ -207,7 +213,7 @@ export class SlideService {
           await manager.save(optionEntities);
         }
 
-        logger.info(`Slide ${slideId} options updated (${options.length} options)`);
+        logger.info(`Slide ${slideId} options updated (${options?.length || 0} options)`);
       }
 
       return this.findSlideWithOptions(slideId, presentationId);

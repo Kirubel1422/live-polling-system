@@ -25,6 +25,13 @@ export class PresentationService {
    */
   async create(dto: CreatePresentationDto, ownerId?: string): Promise<PresentationEntity> {
     const presentationId = await AppDataSource.manager.transaction(async (manager) => {
+      // Generate join code (4 letters, 2 numbers)
+      let joinCode = "";
+      const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      const numbers = "0123456789";
+      for (let i = 0; i < 4; i++) joinCode += letters.charAt(Math.floor(Math.random() * letters.length));
+      for (let i = 0; i < 2; i++) joinCode += numbers.charAt(Math.floor(Math.random() * numbers.length));
+
       // 1. Create the presentation row
       const presentation = manager.create(PresentationEntity, {
         title: dto.title,
@@ -35,6 +42,7 @@ export class PresentationService {
         templateId: dto.templateId,
         isAIGenerated: dto.isAIGenerated,
         ownerId,
+        joinCode,
       });
       const savedPresentation = await manager.save(presentation);
       logger.info(`Presentation created: ${savedPresentation.id}. Attempting to process ${dto.slides?.length || 0} slides.`);
@@ -151,7 +159,7 @@ export class PresentationService {
 
         // Re-insert from DTO
         for (const slideDto of dto.slides) {
-          const { id, options, meta, ...slideFields } = slideDto;
+          const { id: slideId, options, meta, ...slideFields } = slideDto;
 
           const slide = manager.create(SlideEntity, {
             ...slideFields,
