@@ -14,13 +14,14 @@ import { errorHandler } from "src/utils/error/error.middleware";
 import { ApiError } from "src/utils/api/api.response";
 import appRoutes from "src/modules/index.routes";
 import passport from "src/configs/passport";
+import { initializeSocket } from "src/utils/socket";
 
 const app = express();
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
 app.use(
   cors({
-    origin: ENV.CLIENT_URL,
+    origin: true,
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: [
@@ -49,9 +50,9 @@ app.use(cookieParser(ENV.APP_COOKIE_SECRET));
 // ── Passport ──────────────────────────────────────────────────────────────────
 app.use(passport.initialize());
 
-// ── HTTP server + Socket.io (Socket setup to be added in services/socket.ts) ─
+// ── HTTP server + Socket.io ───────────────────────────────────────────────────
 const server = createServer(app);
-// initializeSocket(server); // ← uncomment when socket module is built
+initializeSocket(server);
 
 // ── API routes ────────────────────────────────────────────────────────────────
 app.use("/api", appRoutes);

@@ -44,5 +44,24 @@ export const ENV = {
   AI_API_KEY: getEnvOptional("AI_API_KEY"),
 
   // Model
-  AI_MODEL_NAME: getEnvOptional("AI_MODEL_NAME")
+  AI_MODEL_NAME: getEnvOptional("AI_MODEL_NAME"),
+
+  // OAuth - Google
+  GOOGLE_CLIENT_ID: getEnvOptional("GOOGLE_CLIENT_ID"),
+  GOOGLE_CLIENT_SECRET: getEnvOptional("GOOGLE_CLIENT_SECRET"),
+
+  // OAuth - GitHub
+  GITHUB_CLIENT_ID: getEnvOptional("GITHUB_CLIENT_ID"),
+  GITHUB_CLIENT_SECRET: getEnvOptional("GITHUB_CLIENT_SECRET"),
+
+  // Cloudinary
+  CLOUDINARY_CLOUD_NAME: getEnvOptional("CLOUDINARY_CLOUD_NAME"),
+  CLOUDINARY_API_KEY: getEnvOptional("CLOUDINARY_API_KEY"),
+  CLOUDINARY_API_SECRET: getEnvOptional("CLOUDINARY_API_SECRET"),
+
+  // SMTP
+  SMTP_HOST: getEnvOptional("SMTP_HOST"),
+  SMTP_PORT: getEnvOptional("SMTP_PORT"),
+  SMTP_USER: getEnvOptional("SMTP_USER"),
+  SMTP_PASS: getEnvOptional("SMTP_PASS"),
 };

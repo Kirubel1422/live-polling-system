@@ -8,4 +8,6 @@ const getEnv = (key: string): string => {
 
 export const ENV = {
   API_URL: getEnv("VITE_API_URL"),
+  SOCKET_URL: getEnv("VITE_API_URL").replace(/\/api$/, ''),
+  IS_DEV: (import.meta as any).env.MODE === "development",
 };
