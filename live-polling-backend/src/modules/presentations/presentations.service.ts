@@ -92,9 +92,11 @@ export class PresentationService {
       .createQueryBuilder("presentation")
       .leftJoinAndSelect("presentation.slides", "slide")
       .leftJoinAndSelect("slide.options", "option")
+      .leftJoinAndSelect("slide.responses", "response")
       .orderBy("presentation.createdAt", "DESC")
       .addOrderBy("slide.order", "ASC")
-      .addOrderBy("option.order", "ASC");
+      .addOrderBy("option.order", "ASC")
+      .addOrderBy("response.createdAt", "ASC");
 
     if (ownerId) {
       query.where("presentation.ownerId = :ownerId", { ownerId });
@@ -111,9 +113,11 @@ export class PresentationService {
       .createQueryBuilder("presentation")
       .leftJoinAndSelect("presentation.slides", "slide")
       .leftJoinAndSelect("slide.options", "option")
+      .leftJoinAndSelect("slide.responses", "response")
       .where("presentation.id = :id", { id })
       .orderBy("slide.order", "ASC")
       .addOrderBy("option.order", "ASC")
+      .addOrderBy("response.createdAt", "ASC")
       .getOne();
 
     if (!presentation) {

@@ -70,9 +70,11 @@ export class SlideService {
     const slide = await this.slideRepo
       .createQueryBuilder("slide")
       .leftJoinAndSelect("slide.options", "option")
+      .leftJoinAndSelect("slide.responses", "response")
       .where("slide.id = :slideId", { slideId })
       .andWhere("slide.presentationId = :presentationId", { presentationId })
       .orderBy("option.order", "ASC")
+      .addOrderBy("response.createdAt", "ASC")
       .getOne();
 
     if (!slide) {
@@ -143,9 +145,11 @@ export class SlideService {
     return this.slideRepo
       .createQueryBuilder("slide")
       .leftJoinAndSelect("slide.options", "option")
+      .leftJoinAndSelect("slide.responses", "response")
       .where("slide.presentationId = :presentationId", { presentationId })
       .orderBy("slide.order", "ASC")
       .addOrderBy("option.order", "ASC")
+      .addOrderBy("response.createdAt", "ASC")
       .getMany();
   }
 
