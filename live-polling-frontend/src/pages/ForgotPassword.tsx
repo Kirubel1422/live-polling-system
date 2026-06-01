@@ -2,7 +2,14 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Activity, Mail, ArrowLeft, Loader2 } from 'lucide-react';
+import {
+  Activity,
+  Mail,
+  ArrowLeft,
+  Loader2,
+  CheckCircle2,
+  ArrowRight,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -24,7 +31,7 @@ export default function ForgotPassword() {
   const form = useForm<ForgotPasswordDto>({
     resolver: yupResolver(ForgotPasswordSchema),
     defaultValues: {
-      email: "",
+      email: '',
     },
   });
 
@@ -32,81 +39,143 @@ export default function ForgotPassword() {
     try {
       const response = await forgotPassword(data).unwrap();
       setIsSent(true);
-      toast.success(response.message || "Password reset email sent");
+      toast.success(response.message || 'Password reset email sent');
     } catch (err: any) {
       toast.error(err.message || 'Failed to send reset link');
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50 dark:from-slate-900 dark:via-[#0a1628] dark:to-slate-900 flex items-center justify-center p-4 transition-colors">
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#0598CE]/30 dark:bg-[#0598CE]/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#33C3FF]/30 dark:bg-[#33C3FF]/8 rounded-full blur-3xl pointer-events-none" />
+    <div className="relative isolate flex min-h-screen items-center justify-center overflow-hidden bg-slate-50 px-4 py-10 text-slate-900 transition-colors dark:bg-[#07111f] dark:text-white">
 
-      <div className="w-full max-w-md relative z-10">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center p-3 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-border/50 mb-4">
-            <Activity className="size-8 text-[#0598CE]" />
+      <div className="absolute inset-0 -z-20 bg-[radial-gradient(circle_at_top_left,oklch(0.62_0.1_214_/_0.18),transparent_34%),radial-gradient(circle_at_bottom_right,oklch(0.71_0.09_158_/_0.18),transparent_34%)] dark:bg-[radial-gradient(circle_at_top_left,oklch(0.62_0.1_214_/_0.18),transparent_34%),radial-gradient(circle_at_bottom_right,oklch(0.71_0.09_158_/_0.12),transparent_34%)]" />
+
+      <div className="premium-grid absolute inset-0 -z-10 opacity-75" />
+
+      <div
+        className="pointer-events-none absolute left-1/2 top-1/2 -z-10 size-[620px] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-10 blur-3xl dark:opacity-10"
+        style={{ background: 'oklch(0.62 0.1 214)' }}
+      />
+
+      <div
+        className="pointer-events-none absolute left-[18%] top-[18%] -z-10 size-72 rounded-full opacity-15 blur-3xl dark:opacity-10"
+        style={{ background: 'oklch(0.62 0.1 214)' }}
+      />
+
+      <div
+        className="pointer-events-none absolute bottom-[14%] right-[12%] -z-10 size-80 rounded-full opacity-15 blur-3xl dark:opacity-10"
+        style={{ background: 'oklch(0.71 0.09 158)' }}
+      />
+
+      <div className="fade-up relative z-10 w-full max-w-md rounded-2xl bg-white/[0.88] px-8 py-9 backdrop-blur-xl dark:bg-white/[0.06]">
+        <div className="mb-8 flex flex-col items-center text-center">
+          <div className="mb-5 flex size-14 items-center justify-center rounded-2xl bg-primary/10">
+            {isSent ? (
+              <CheckCircle2 className="size-7 text-primary" />
+            ) : (
+              <Activity className="size-7 text-primary" />
+            )}
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">Forgot password?</h1>
-          <p className="text-sm text-muted-foreground mt-2">
-            No worries, we'll send you reset instructions.
+
+          <h1 className="text-3xl font-black tracking-[-0.035em] text-slate-950 dark:text-white">
+            {isSent ? 'Check your email' : 'Forgot password?'}
+          </h1>
+
+          <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+            {isSent
+              ? 'We sent password reset instructions to your email.'
+              : "No worries, we'll send you reset instructions."}
           </p>
         </div>
 
-        <div className="bg-white/80 dark:bg-white/[0.06] backdrop-blur-xl border border-border/50 p-8 rounded-3xl shadow-xl">
-          {isSent ? (
-            <div className="text-center space-y-6">
-              <div className="inline-flex items-center justify-center p-4 bg-primary/10 rounded-full">
-                <Mail className="size-8 text-primary" />
+        {isSent ? (
+          <div className="space-y-6 text-center">
+            <div className="rounded-2xl bg-slate-50/70 px-4 py-5 text-center text-sm dark:bg-white/[0.04]">
+              <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl bg-primary/10">
+                <Mail className="size-6 text-primary" />
               </div>
-              <p className="text-sm text-muted-foreground">
-                We sent a password reset link to <span className="font-medium text-foreground">{form.getValues('email')}</span>.
+
+              <p className="leading-6 text-slate-500 dark:text-slate-400">
+                We sent a password reset link to{' '}
+                <span className="font-black text-slate-900 dark:text-white">
+                  {form.getValues('email')}
+                </span>
+                .
               </p>
-              <Button asChild className="w-full h-11 text-base rounded-xl">
-                <Link to="/login">Return to log in</Link>
-              </Button>
             </div>
-          ) : (
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-3.5 size-4 text-muted-foreground" />
-                          <Input
-                            type="email"
-                            placeholder="name@example.com"
-                            className="pl-9 h-11 bg-white/50 dark:bg-slate-900/50"
-                            {...field}
-                          />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <Button type="submit" className="w-full h-11 text-base rounded-xl" disabled={isLoading}>
-                  {isLoading ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
-                  {isLoading ? 'Sending...' : 'Reset password'}
-                </Button>
-                
-                <div className="text-center">
-                  <Link to="/login" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
-                    <ArrowLeft className="size-4" />
-                    Back to log in
-                  </Link>
-                </div>
-              </form>
-            </Form>
-          )}
-        </div>
+
+            <Button
+              asChild
+              className="h-12 w-full rounded-2xl bg-primary font-black text-white shadow-none transition-all duration-300 hover:-translate-y-0.5 hover:bg-primary/90"
+            >
+              <Link to="/login">
+                Return to log in
+                <ArrowRight className="ml-2 size-4" />
+              </Link>
+            </Button>
+
+            <div className="text-center">
+              <Link
+                to="/start"
+                className="group inline-flex items-center gap-1.5 text-sm font-semibold text-slate-400 transition-colors duration-200 hover:text-primary"
+              >
+                <ArrowLeft className="size-3.5 transition-transform duration-200 group-hover:-translate-x-0.5" />
+                Back to start
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                      Email
+                    </FormLabel>
+
+                    <FormControl>
+                      <div className="relative">
+                        <Mail className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+
+                        <Input
+                          type="email"
+                          placeholder="name@example.com"
+                          className="h-12 rounded-2xl border-slate-200/80 bg-white/70 pl-10 font-medium shadow-none transition-all duration-300 focus-visible:border-primary focus-visible:ring-primary/20 dark:border-white/10 dark:bg-white/[0.055]"
+                          {...field}
+                        />
+                      </div>
+                    </FormControl>
+
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <Button
+                type="submit"
+                className="h-12 w-full rounded-2xl bg-primary font-black text-white shadow-none transition-all duration-300 hover:-translate-y-0.5 hover:bg-primary/90"
+                disabled={isLoading}
+              >
+                {isLoading ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+                {isLoading ? 'Sending...' : 'Reset password'}
+                {!isLoading ? <ArrowRight className="ml-2 size-4" /> : null}
+              </Button>
+
+              <div className="text-center">
+                <Link
+                  to="/login"
+                  className="group inline-flex items-center gap-1.5 text-sm font-semibold text-slate-400 transition-colors duration-200 hover:text-primary"
+                >
+                  <ArrowLeft className="size-3.5 transition-transform duration-200 group-hover:-translate-x-0.5" />
+                  Back to log in
+                </Link>
+              </div>
+            </form>
+          </Form>
+        )}
       </div>
     </div>
   );
