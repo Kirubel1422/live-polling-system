@@ -7,5 +7,7 @@ const controller = new ParticipantController();
 router.post("/join", controller.joinSession);
 router.get("/session/:presentationId", controller.getSessionData);
 router.post("/response", controller.submitResponse);
+router.post("/upvote", controller.upvoteResponse);
+router.delete("/:participantId", controller.kickParticipant);
 
 export default router;
