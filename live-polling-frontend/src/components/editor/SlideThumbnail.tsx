@@ -64,17 +64,25 @@ export default function SlideThumbnail({ slide, index, isSelected, onClick, pres
         ref={setNodeRef}
         style={style}
         className={cn(
-          'group relative border-transparent rounded-2xl h-20 w-3/4 mx-auto border bg-card transition-all',
+          'group relative border-transparent rounded-xl aspect-video w-11/12 mx-auto border bg-card transition-all',
           isSelected ? 'ring-2 ring-accent/60 overflow-hidden' : 'overflow-hidden hover:border-border',
           isDragging && 'opacity-50',
         )}
         onClick={onClick}
       >
-        <div {...attributes} {...listeners} className="flex items-start gap-2 !overflow-hidden">
-          <div className="flex-1 cursor-grab">
-            <div className="mb-1.5 h-full w-full" style={{ backgroundColor: slide.theme.backgroundColor }}>
-              <div className="flex h-20 w-full flex-col items-center justify-center !overflow-hidden p-2 *:min-h-0">
-                {renderSlideContent(slide, 'list')}
+        <div {...attributes} {...listeners} className="flex h-full items-start gap-2 !overflow-hidden">
+          <div className="flex-1 cursor-grab h-full">
+            <div className="h-full w-full" style={{ backgroundColor: slide.theme.backgroundColor }}>
+              <div className="flex h-full w-full flex-col items-center justify-center !overflow-hidden p-2 *:min-h-0">
+                {renderSlideContent(
+                  slide, 
+                  'list', 
+                  presentationId, 
+                  false, 
+                  slide?.type === "qa" 
+                    ? (slide?.responses || [])
+                    : (slide?.responses || []).map((r: any) => (r && typeof r === 'object' && 'value' in r) ? r.value : r)
+                )}
               </div>
             </div>
             <div className="flex absolute right-0 top-0 items-center justify-between">

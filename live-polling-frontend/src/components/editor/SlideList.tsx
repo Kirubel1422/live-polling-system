@@ -20,56 +20,76 @@ import { setSelectedSlide } from '@/store/editorSlice';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { type SlideListProps } from './types';
 import SlideThumbnail from './SlideThumbnail';
-import { useReorderSlidesMutation } from "@/api/presentations.api";
+import { useReorderSlidesMutation } from '@/api/presentations.api';
 
-export default function SlideList({ slides, selectedSlideId, presentationId, isTemplatePreview }: SlideListProps) {
+export default function SlideList({
+  slides,
+  selectedSlideId,
+  presentationId,
+  isTemplatePreview,
+}: SlideListProps) {
   const dispatch = useAppDispatch();
   const [reorderSlidesApi] = useReorderSlidesMutation();
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
   );
 
-  const sortedSlides = useMemo(() => [...slides].sort((a, b) => a.order - b.order), [slides]);
+  const sortedSlides = useMemo(
+    () => [...slides].sort((a, b) => a.order - b.order),
+    [slides],
+  );
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
+
     if (over && active.id !== over.id) {
       const oldIndex = sortedSlides.findIndex((s) => s.id === active.id);
       const newIndex = sortedSlides.findIndex((s) => s.id === over.id);
       const newOrder = arrayMove(sortedSlides, oldIndex, newIndex);
       const slideIds = newOrder.map((s) => s.id);
-      
-      // Update local state immediately
+
       dispatch(reorderSlides({ presentationId, slideIds }));
-      
-      // Update backend only for real (non-template) presentations
+
       if (!isTemplatePreview) {
         try {
           await reorderSlidesApi({ id: presentationId, slideIds }).unwrap();
         } catch (err) {
-          console.error("Failed to reorder slides on backend", err);
+          console.error('Failed to reorder slides on backend', err);
         }
       }
     }
   };
 
   return (
-    <ScrollArea className="flex-1">
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={sortedSlides.map((s) => s.id)} strategy={verticalListSortingStrategy}>
-          <div className="space-y-2 p-3">
+    <ScrollArea className="min-h-0 flex-1">
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={sortedSlides.map((s) => s.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          <div className="space-y-3 p-4">
             {sortedSlides.map((slide, index) => (
-              <SlideThumbnail
+              <div
                 key={slide.id}
-                slide={slide}
-                index={index}
-                isSelected={slide.id === selectedSlideId}
-                onClick={() => dispatch(setSelectedSlide(slide.id))}
-                presentationId={presentationId}
-                isTemplatePreview={isTemplatePreview}
-              />
+                className="rounded-[1.35rem] transition-all duration-300"
+              >
+                <SlideThumbnail
+                  slide={slide}
+                  index={index}
+                  isSelected={slide.id === selectedSlideId}
+                  onClick={() => dispatch(setSelectedSlide(slide.id))}
+                  presentationId={presentationId}
+                  isTemplatePreview={isTemplatePreview}
+                />
+              </div>
             ))}
           </div>
         </SortableContext>

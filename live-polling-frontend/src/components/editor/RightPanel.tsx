@@ -21,7 +21,11 @@ import { RIGHT_PANEL_TABS } from "./data.const";
 
 
 
-export default function RightPanel({ slide, presentationId, isTemplatePreview }: RightPanelProps) {
+export default function RightPanel({
+  slide,
+  presentationId,
+  isTemplatePreview,
+}: RightPanelProps) {
   const dispatch = useAppDispatch();
   const activeTab = useAppSelector((state) => state.editor.rightPanelTab);
 
@@ -38,37 +42,48 @@ export default function RightPanel({ slide, presentationId, isTemplatePreview }:
   const tabs = RIGHT_PANEL_TABS;
 
   return (
-    <div className="flex h-full mr-2 max-w-120">
-      {/* Right panel: content area (left) slides in from the right when tab is active */}
-      <div className="min-w-0 flex-1 overflow-hidden w-120">
-        <ScrollArea className="h-full ">
+    <aside className="flex h-full shrink-0 border-l border-slate-200/70 bg-white/[0.72] backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.045]">
+      <div className="min-w-0 flex-1 overflow-hidden w-[420px]">
+        <ScrollArea className="h-full">
           <div
             key={activeTab}
             className="animate-in slide-in-from-right-4 fade-in-0 flex flex-col gap-4 p-4 duration-200"
           >
-            {activeTab === "design" && (
-              <DesignTab slide={slide} onUpdate={handleUpdateSlide} presentationId={presentationId} />
+            {activeTab === 'design' && (
+              <DesignTab
+                slide={slide}
+                onUpdate={handleUpdateSlide}
+                presentationId={presentationId}
+              />
             )}
-            {activeTab === "settings" && (
-              <SettingsTab slide={slide} onUpdate={handleUpdateSlide} presentationId={presentationId} slideId={slide.id} isTemplatePreview={isTemplatePreview} />
+
+            {activeTab === 'settings' && (
+              <SettingsTab
+                slide={slide}
+                onUpdate={handleUpdateSlide}
+                presentationId={presentationId}
+                slideId={slide.id}
+                isTemplatePreview={isTemplatePreview}
+              />
             )}
           </div>
         </ScrollArea>
       </div>
 
-      {/* Vertical tabs (right) */}
-      <div className="flex shrink-0 flex-col mt-4 h-fit border-l border-border/60 bg-white dark:bg-slate-900 p-1 rounded-2xl">
+      <div className="flex shrink-0 flex-col gap-2 border-l border-slate-200/70 bg-white/[0.72] p-2 dark:border-white/10 dark:bg-white/[0.035]">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
+
           return (
             <button
               key={tab.id}
               type="button"
               onClick={() => dispatch(setRightPanelTab(tab.id))}
               className={cn(
-                "flex flex-col items-center gap-1 px-7 py-8 text-xs font-medium transition-colors",
-                isActive && "border border-primary bg-primary/10 dark:bg-primary/20 rounded-2xl",
+                'flex flex-col items-center gap-1 rounded-2xl px-5 py-6 text-xs font-black text-slate-500 transition-all duration-300 hover:bg-primary/10 hover:text-primary dark:text-slate-400',
+                isActive &&
+                  'border border-primary/20 bg-primary/10 text-primary dark:bg-primary/20',
               )}
             >
               <Icon className="size-4 shrink-0" />
@@ -77,7 +92,7 @@ export default function RightPanel({ slide, presentationId, isTemplatePreview }:
           );
         })}
       </div>
-    </div>
+    </aside>
   );
 }
 
@@ -115,15 +130,14 @@ function DesignTab({ slide, presentationId }: DesignTabProps) {
   };
 
   return (
-    <div className="space-y-6 bg-zinc-50 dark:bg-slate-900 p-10 rounded-2xl border border-border/50">
-      <div className="space-y-3">
+    <div className="space-y-6 rounded-[2rem] border border-slate-200/70 bg-white/[0.88] p-6 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.06]">      <div className="space-y-3">
         <Label>Theme Presets</Label>
         <div className="grid grid-cols-2 gap-2">
           {Object.entries(THEMES).map(([key, theme]) => (
             <button
               key={key}
               onClick={() => handleApplyPresetTheme(key)}
-              className="aspect-video rounded-lg border-2 overflow-hidden transition-all hover:border-primary flex flex-col items-center justify-center p-2"
+              className="aspect-video overflow-hidden rounded-2xl border border-slate-200/70 p-2 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 dark:border-white/10"
               style={{ backgroundColor: theme.backgroundColor }}
             >
               <div
@@ -158,14 +172,15 @@ function DesignTab({ slide, presentationId }: DesignTabProps) {
               onChange={(e) =>
                 handleThemeUpdate({ backgroundColor: e.target.value })
               }
-              className="h-9 w-12 p-1"
+              className="h-11 w-14 rounded-2xl border-slate-200/80 bg-white/70 p-1 shadow-none dark:border-white/10 dark:bg-white/[0.055]"
             />
+
             <Input
               value={slide.theme.backgroundColor}
               onChange={(e) =>
                 handleThemeUpdate({ backgroundColor: e.target.value })
               }
-              className="flex-1"
+              className="h-11 flex-1 rounded-2xl border-slate-200/80 bg-white/70 font-medium shadow-none focus-visible:border-primary focus-visible:ring-primary/20 dark:border-white/10 dark:bg-white/[0.055]"
             />
           </div>
         </div>

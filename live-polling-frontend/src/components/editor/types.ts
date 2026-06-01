@@ -6,6 +6,8 @@ export type ThumbnailSize = false | "list" | "card";
 export interface SlideCanvasProps {
   slide: Slide | undefined;
   presentationId: string;
+  isPreview: boolean;
+  responses: any[];
 }
 
 export interface ContentComponentProps<T extends Slide> {

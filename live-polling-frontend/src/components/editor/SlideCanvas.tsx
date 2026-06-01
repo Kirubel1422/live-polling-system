@@ -18,7 +18,6 @@ import { Star, ThumbsUp } from "lucide-react";
 import { type SlideCanvasProps, type ThumbnailSize } from "./types";
 import {
   WORD_CLOUD_SAMPLE_WORDS,
-  QA_SAMPLE_QUESTIONS,
   WHEEL_COLORS,
 } from "./data.const";
 import { InlineTextEdit } from "./InlineTextEdit";
@@ -30,23 +29,39 @@ export type SlideResponses = Record<string, any[]>;
 export default function SlideCanvas({
   slide,
   presentationId,
+  isPreview,
+  responses,
 }: SlideCanvasProps) {
   if (!slide) {
     return (
-      <div className="flex flex-1 items-center justify-center ">
-        <p className="text-muted-foreground">Select a slide to edit</p>
+      <div className="flex flex-1 items-center justify-center p-8">
+        <div className="rounded-[2rem] border border-dashed border-slate-300/80 bg-white/[0.72] px-8 py-12 text-center backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.045]">
+          <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
+            Select a slide to edit
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-1 items-start justify-top p-8 dark:bg-slate-900 dark:rounded-xl">
-      <div
-        className="aspect-video w-full max-w-6xl  border-md shadow-xs rounded-2xl overflow-hidden"
-        style={{ backgroundColor: slide.theme.backgroundColor }}
-      >
-        <div className="flex h-full flex-col items-center justify-center p-8">
-          {renderSlideContent(slide, false, presentationId)}
+    <div className="flex min-h-0 flex-1 items-center justify-center p-8">
+      <div className="relative w-full max-w-6xl rounded-[2rem] border border-slate-200/70 bg-white/[0.72] p-4 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.045]">
+        <div className="absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-secondary/70 to-transparent" />
+
+        <div
+          className="aspect-video w-full overflow-hidden rounded-[1.5rem] border border-slate-200/70 shadow-none dark:border-white/10"
+          style={{ backgroundColor: slide.theme.backgroundColor }}
+        >
+          <div className="flex h-full flex-col items-center justify-center p-8">
+            {renderSlideContent(
+              slide,
+              false,
+              presentationId,
+              isPreview,
+              responses,
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -90,7 +105,6 @@ export function renderSlideContent(
         />
       );
     case "word-cloud":
-      console.log("[renderSlideContent] word-cloud case received responses:", responses);
       return (
         <WordCloudContent
           thumbnailSize={thumbnailSize}
@@ -125,6 +139,7 @@ export function renderSlideContent(
           slide={slide}
           presentationId={presentationId}
           isPreview={isPreview}
+          responses={responses}
         />
       );
     case "qa":
@@ -134,6 +149,7 @@ export function renderSlideContent(
           slide={slide}
           presentationId={presentationId}
           isPreview={isPreview}
+          responses={responses}
         />
       );
     case "100-points":
@@ -143,6 +159,7 @@ export function renderSlideContent(
           slide={slide}
           presentationId={presentationId}
           isPreview={isPreview}
+          responses={responses}
         />
       );
     case "wheel-of-names":
@@ -161,6 +178,7 @@ export function renderSlideContent(
           slide={slide as any}
           presentationId={presentationId}
           isPreview={isPreview}
+          responses={responses}
         />
       );
     case "quiz":
@@ -971,9 +989,8 @@ function RankingContent({
                     isCard ? "text-[10px]" : "text-[8px]",
                   )}
                   style={{ color: slide.theme.textColor }}
-                >
-                  {item.text}
-                </span>
+                  dangerouslySetInnerHTML={{__html: item.text}}
+                />
               </div>
             ))}
           {itemsArray.length > 3 && (
@@ -1055,11 +1072,13 @@ function ScalesContent({
   thumbnailSize,
   presentationId,
   isPreview,
+  responses,
 }: {
   thumbnailSize?: ThumbnailSize | undefined;
   slide: ScalesSlide;
   presentationId?: string | undefined;
   isPreview?: boolean | undefined;
+  responses?: any[] | undefined;
 }) {
   const dispatch = useAppDispatch();
   const isThumbnail = thumbnailSize !== false;
@@ -1134,6 +1153,13 @@ function ScalesContent({
   const leftLabel = Array.isArray(labels) ? labels[0] : labels?.left;
   const rightLabel = Array.isArray(labels) ? labels[labels.length - 1] : labels?.right;
 
+  const totalResponses = responses?.length || 0;
+  const counts: Record<number, number> = {};
+  responses?.forEach((r: any) => {
+    const val = Number(r);
+    counts[val] = (counts[val] || 0) + 1;
+  });
+
   return (
     <div className="flex h-full w-full flex-col items-center justify-center">
       <InlineTextEdit
@@ -1154,24 +1180,43 @@ function ScalesContent({
       />
       <div className="w-full max-w-xl">
         <div className="flex justify-between mb-4">
-          {Array.from({ length: steps }).map((_, i) => (
-            <button
-              key={i}
-              className="size-12 rounded-full text-sm font-medium transition-all hover:scale-110"
-              style={{
-                backgroundColor:
-                  i === Math.floor(steps / 2)
-                    ? slide.theme.accentColor
-                    : slide.theme.textColor + "10",
-                color:
-                  i === Math.floor(steps / 2)
-                    ? "#fff"
-                    : slide.theme.textColor,
-              }}
-            >
-              {i + 1}
-            </button>
-          ))}
+          {Array.from({ length: steps }).map((_, i) => {
+            const stepValue = i + 1;
+            const count = counts[stepValue] || 0;
+            const percentage = totalResponses > 0 ? Math.round((count / totalResponses) * 100) : 0;
+            
+            return (
+              <div key={i} className="flex flex-col items-center gap-2">
+                <div
+                  className="relative size-12 md:size-16 rounded-full text-sm font-medium transition-all overflow-hidden border-2 flex items-center justify-center shadow-inner"
+                  style={{
+                    borderColor: slide.theme.accentColor + "40",
+                    backgroundColor: "transparent",
+                  }}
+                >
+                  <div
+                    className="absolute bottom-0 left-0 right-0 z-0 transition-all duration-700 ease-in-out"
+                    style={{
+                      height: totalResponses > 0 ? `${percentage}%` : '0%',
+                      backgroundColor: slide.theme.accentColor,
+                      opacity: 0.8
+                    }}
+                  />
+                  <span 
+                    className="relative z-10 font-bold"
+                    style={{ color: percentage > 40 ? "#fff" : slide.theme.textColor }}
+                  >
+                    {stepValue}
+                  </span>
+                </div>
+                {totalResponses > 0 && (
+                  <span className="text-xs font-semibold opacity-70" style={{ color: slide.theme.textColor }}>
+                    {count} {count === 1 ? 'vote' : 'votes'}
+                  </span>
+                )}
+              </div>
+            );
+          })}
         </div>
         <div
           className="flex justify-between text-sm w-full"
@@ -1202,17 +1247,35 @@ function QAContent({
   thumbnailSize,
   presentationId,
   isPreview,
+  responses,
 }: {
   thumbnailSize?: ThumbnailSize | undefined;
   slide: QASlide;
   presentationId?: string | undefined;
   isPreview?: boolean | undefined;
+  responses?: any[] | undefined;
 }) {
   const dispatch = useAppDispatch();
   const isThumbnail = thumbnailSize !== false;
   const isCard = thumbnailSize === "card";
-  const sampleQuestions = QA_SAMPLE_QUESTIONS;
-  const displayQuestions = slide.questions && slide.questions.length > 0 ? slide.questions : sampleQuestions;
+  
+  const liveQuestions = (responses || []).map((r: any, idx: number) => {
+    if (typeof r === 'string') {
+      return { id: `fallback-${idx}`, text: r, upvotes: 0, upvotedBy: [] };
+    }
+    const val = r.value || {};
+    return {
+      id: r.id || `fallback-${idx}`,
+      text: typeof val === 'string' ? val : (val.text || ""),
+      upvotes: typeof val === 'object' ? (val.upvotes || 0) : 0,
+      upvotedBy: typeof val === 'object' ? (val.upvotedBy || []) : []
+    };
+  });
+
+  const uniqueQuestions = Array.from(new Map(liveQuestions.map((q) => [q.id || q.text, q])).values());
+  uniqueQuestions.sort((a, b) => b.upvotes - a.upvotes);
+
+  const displayQuestions = uniqueQuestions.length > 0 ? uniqueQuestions : [];
 
   const handleUpdate = (updates: Partial<Slide>) => {
     if (presentationId && (!isThumbnail && !isPreview)) {
@@ -1267,7 +1330,7 @@ function QAContent({
     );
   }
   return (
-    <div className="flex h-full w-full flex-col">
+    <div className="flex h-full mt-10 w-full flex-col">
       <InlineTextEdit
         text={slide.title || ""}
         placeholder="Q&A Session"
@@ -1290,18 +1353,9 @@ function QAContent({
               <ThumbsUp className="size-4" />
               <span className="text-xs font-medium">{q.upvotes || 0}</span>
             </button>
-            <InlineTextEdit
-              text={q.text || ""}
-              placeholder="Question"
-              isEditable={(!isThumbnail && !isPreview)}
-              onUpdate={(newText) => {
-                const newQs = [...displayQuestions];
-                newQs[i] = { ...newQs[i], text: newText };
-                handleUpdate({ questions: newQs as any });
-              }}
-              className="flex-1 w-full text-left"
-              style={{ color: slide.theme.textColor }}
-            />
+            <div className="flex-1 text-lg font-medium" style={{ color: slide.theme.textColor }}>
+              {q.text}
+            </div>
           </div>
         ))}
       </div>
@@ -1314,21 +1368,30 @@ function PointsContent({
   thumbnailSize,
   presentationId,
   isPreview,
+  responses,
 }: {
   thumbnailSize?: ThumbnailSize | undefined;
   slide: PointsSlide;
   presentationId?: string | undefined;
   isPreview?: boolean | undefined;
+  responses?: any[] | undefined;
 }) {
   const dispatch = useAppDispatch();
   const isThumbnail = thumbnailSize !== false;
   const isCard = thumbnailSize === "card";
   const itemsArray = Array.isArray((slide as any).options || slide.items) ? ((slide as any).options || slide.items) : [];
-  const mockAllocations = itemsArray.map(
-    (_: any, i: number) =>
-      Math.floor(slide.totalPoints / itemsArray.length) +
-      (i === 0 ? slide.totalPoints % itemsArray.length : 0),
-  );
+
+  const allocations = itemsArray.map((item: any) => {
+    if (!responses || responses.length === 0) return 0;
+    
+    let totalPoints = 0;
+    responses.forEach((response: any) => {
+      totalPoints += (response[item.id] || 0);
+    });
+    return Math.round(totalPoints);
+  });
+  
+  const maxPossiblePoints = slide.totalPoints * (responses?.length || 1);
 
   const handleUpdate = (updates: Partial<Slide>) => {
     if (presentationId && (!isThumbnail && !isPreview)) {
@@ -1365,37 +1428,47 @@ function PointsContent({
         <div
           className={cn(
             "mt-1 w-full max-w-[95%]",
-            isCard ? "space-y-1" : "space-y-0.5",
+            isCard ? "space-y-1.5" : "space-y-1",
           )}
         >
           {itemsArray.slice(0, 3).map((item: any, index: number) => (
-              <div key={item.id} className="flex items-center gap-1">
-                <div
-                  className={cn(
-                    "flex-1 rounded-full overflow-hidden",
-                    isCard ? "h-1.5" : "h-1",
-                  )}
-                  style={{ backgroundColor: slide.theme.textColor + "20" }}
-                >
-                  <div
-                    className="h-full rounded-full"
-                    style={{
-                      width: `${(mockAllocations[index] / slide.totalPoints) * 100}%`,
-                      backgroundColor: item.color || slide.theme.accentColor,
-                    }}
-                  />
-                </div>
+            <div key={item.id} className="space-y-0.5">
+              <div className="flex justify-between items-center w-full gap-2">
                 <span
                   className={cn(
-                    "w-6 text-right font-medium",
+                    "flex-1 text-left truncate font-medium",
+                    isCard ? "text-[10px]" : "text-[8px]",
+                  )}
+                  style={{ color: slide.theme.textColor }}
+                  dangerouslySetInnerHTML={{__html: item.text || `Item ${index + 1}`}}
+                />
+                <span
+                  className={cn(
+                    "font-bold shrink-0",
                     isCard ? "text-[10px]" : "text-[8px]",
                   )}
                   style={{ color: slide.theme.accentColor }}
                 >
-                  {mockAllocations[index]}
+                  {allocations[index]} pts
                 </span>
               </div>
-            ))}
+              <div
+                className={cn(
+                  "rounded-full overflow-hidden",
+                  isCard ? "h-1.5" : "h-1",
+                )}
+                style={{ backgroundColor: slide.theme.textColor + "20" }}
+              >
+                <div
+                  className="h-full rounded-full transition-all duration-500 ease-in-out"
+                  style={{
+                    width: `${Math.min(100, (allocations[index] / Math.max(1, maxPossiblePoints)) * 100)}%`,
+                    backgroundColor: item.color || slide.theme.accentColor,
+                  }}
+                />
+              </div>
+            </div>
+          ))}
         </div>
         <p
           className={cn("opacity-60", isCard ? "text-[10px]" : "text-[8px]")}
@@ -1445,7 +1518,7 @@ function PointsContent({
                   className="font-bold shrink-0"
                   style={{ color: slide.theme.accentColor }}
                 >
-                  {mockAllocations[index]} pts
+                  {allocations[index]} pts
                 </span>
               </div>
               <div
@@ -1453,9 +1526,9 @@ function PointsContent({
                 style={{ backgroundColor: slide.theme.textColor + "20" }}
               >
                 <div
-                  className="h-full rounded-full transition-all"
+                  className="h-full rounded-full transition-all duration-500 ease-in-out"
                   style={{
-                    width: `${(mockAllocations[index] / slide.totalPoints) * 100}%`,
+                    width: `${Math.min(100, (allocations[index] / maxPossiblePoints) * 100)}%`,
                     backgroundColor: item.color || slide.theme.accentColor,
                   }}
                 />
@@ -1721,11 +1794,13 @@ function NumberContent({
   thumbnailSize,
   presentationId,
   isPreview,
+  responses = [],
 }: {
   thumbnailSize?: ThumbnailSize | undefined;
   slide: NumberSlide;
   presentationId?: string | undefined;
   isPreview?: boolean | undefined;
+  responses?: any[] | undefined;
 }) {
   const dispatch = useAppDispatch();
   const isThumbnail = thumbnailSize !== false;
@@ -1799,13 +1874,32 @@ function NumberContent({
         />
       )}
       <div
-        className="w-full max-w-xl rounded-xl border-2 border-dashed p-8 text-center flex flex-col items-center justify-center gap-2"
+        className="w-full max-w-xl rounded-xl border-2 border-dashed p-8 text-center flex flex-col items-center justify-center gap-2 min-h-[160px]"
         style={{ borderColor: slide.theme.accentColor + "40" }}
       >
-        <span className="text-4xl font-mono" style={{ color: slide.theme.textColor + "80" }}>123</span>
-        <p className="text-muted-foreground">
-          Participants will input a number here.
-        </p>
+        {responses && responses.length > 0 ? (
+          <div className="flex flex-col items-center gap-4 w-full">
+            <span className="text-6xl font-mono font-bold" style={{ color: slide.theme.accentColor }}>
+              {(responses.reduce((a, b) => a + Number(b), 0) / responses.length).toFixed(1).replace(/\.0$/, '')}
+            </span>
+            <span className="text-sm font-medium opacity-70 uppercase tracking-widest" style={{ color: slide.theme.textColor }}>Average of {responses.length} response{responses.length !== 1 ? 's' : ''}</span>
+            
+            <div className="flex flex-wrap justify-center gap-2 mt-4 max-h-48 overflow-y-auto w-full">
+              {responses.map((num, i) => (
+                <div key={i} className="px-4 py-2 rounded-lg font-mono text-lg font-medium" style={{ backgroundColor: slide.theme.accentColor + "20", color: slide.theme.textColor }}>
+                  {num}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <>
+            <span className="text-4xl font-mono" style={{ color: slide.theme.textColor + "80" }}>123</span>
+            <p className="text-muted-foreground">
+              Participants will input a number here.
+            </p>
+          </>
+        )}
       </div>
     </div>
   );
@@ -1816,7 +1910,7 @@ function QuizContent({
   thumbnailSize,
   presentationId,
   isPreview,
-
+  responses,
 }: {
   thumbnailSize?: ThumbnailSize | undefined;
   slide: QuizSlide;
@@ -1898,6 +1992,11 @@ function QuizContent({
       </div>
     );
   }
+
+  const totalResponses = responses?.length || 0;
+  const counts: Record<string, number> = {};
+  responses?.forEach((r: any) => { counts[r] = (counts[r] || 0) + 1; });
+
   return (
     <div className="flex h-full w-full flex-col">
       <div className="mb-8 text-center w-full relative">
@@ -1925,31 +2024,52 @@ function QuizContent({
         )}
       </div>
       <div className="grid flex-1 grid-cols-2 gap-4">
-        {optionsArray.map((option: any, index: number) => (
-          <div
-            key={option.id || index}
-            className={cn(
-              "flex items-center justify-start rounded-xl font-medium text-white transition-transform",
-              isPreview ? "p-4 text-base" : "p-6 text-lg",
-              option.isCorrect && !isPreview ? "ring-4 ring-green-500" : ""
-            )}
-            style={{ backgroundColor: option.color || slide.theme.accentColor }}
-          >
-            <span className="mr-3 flex size-8 shrink-0 items-center justify-center rounded-full bg-white/20 text-sm">
-              {String.fromCharCode(65 + index)}
-            </span>
-            <InlineTextEdit
-              text={option.text || ""}
-              placeholder={`Option ${index + 1}`}
-              isEditable={(!isThumbnail && !isPreview)}
-              onUpdate={(newText) => {
-                const newOptions = optionsArray.map((o: any) => o.id === option.id ? { ...o, text: newText } : o);
-                handleUpdate({ options: newOptions });
-              }}
-              className="flex-1 w-full text-left"
-            />
-          </div>
-        ))}
+        {optionsArray.map((option: any, index: number) => {
+          const count = counts[option.id] || 0;
+          const percentage = totalResponses > 0 ? Math.round((count / totalResponses) * 100) : 0;
+          
+          return (
+            <div
+              key={option.id || index}
+              className={cn(
+                "relative flex items-center justify-start rounded-xl font-medium text-white transition-transform overflow-hidden",
+                isPreview ? "p-4 text-base" : "p-6 text-lg",
+                option.isCorrect && !isPreview ? "ring-4 ring-green-500" : ""
+              )}
+              style={{ backgroundColor: "rgba(255,255,255,0.1)" }}
+            >
+              <div 
+                className="absolute inset-0 z-0 transition-all duration-500 ease-in-out" 
+                style={{ 
+                  backgroundColor: option.color || slide.theme.accentColor,
+                  width: totalResponses > 0 ? `${percentage}%` : '100%',
+                  opacity: totalResponses > 0 ? 1 : 0.8
+                }} 
+              />
+              <div className="relative z-10 flex items-center w-full">
+                <span className="mr-3 flex size-8 shrink-0 items-center justify-center rounded-full bg-white/20 text-sm">
+                  {String.fromCharCode(65 + index)}
+                </span>
+                <InlineTextEdit
+                  text={option.text || ""}
+                  placeholder={`Option ${index + 1}`}
+                  isEditable={(!isThumbnail && !isPreview)}
+                  onUpdate={(newText) => {
+                    const newOptions = optionsArray.map((o: any) => o.id === option.id ? { ...o, text: newText } : o);
+                    handleUpdate({ options: newOptions });
+                  }}
+                  className="flex-1 w-full text-left"
+                />
+                {totalResponses > 0 && (
+                  <div className="ml-4 flex items-center gap-2">
+                    <span className="text-xl font-bold">{count}</span>
+                    <span className="text-sm opacity-70">({percentage}%)</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
