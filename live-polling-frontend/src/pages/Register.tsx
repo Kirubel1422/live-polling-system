@@ -31,7 +31,7 @@ function FloatingBadge({
         animationDelay: delay,
       }}
     >
-      <Icon className="size-4 text-[#0598CE]" />
+      <Icon className="size-4 text-primary" />
       <span>{children}</span>
     </div>
   );
@@ -41,12 +41,13 @@ export default function Register(): ReactNode {
   return (
     <div className="relative isolate flex min-h-screen items-center justify-center overflow-hidden bg-slate-50 px-4 py-10 text-slate-900 transition-colors dark:bg-[#07111f] dark:text-white">
 
+
       <div className="absolute inset-0 -z-20 bg-[radial-gradient(circle_at_top_left,rgba(5,152,206,.18),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(51,195,255,.18),transparent_34%)] dark:bg-[radial-gradient(circle_at_top_left,rgba(5,152,206,.18),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(51,195,255,.12),transparent_34%)]" />
       <div className="premium-grid absolute inset-0 -z-10 opacity-75" />
 
-      <div className="absolute left-1/2 top-1/2 -z-10 size-[620px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#0598CE]/8 blur-3xl dark:bg-[#0598CE]/8" />
-      <div className="absolute left-[18%] top-[18%] -z-10 size-72 rounded-full bg-[#0598CE]/14 blur-3xl dark:bg-[#0598CE]/10" />
-      <div className="absolute bottom-[14%] right-[12%] -z-10 size-80 rounded-full bg-[#33C3FF]/16 blur-3xl dark:bg-[#33C3FF]/10" />
+      <div className="absolute left-1/2 top-1/2 -z-10 size-[620px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/8 blur-3xl" />
+      <div className="absolute left-[18%] top-[18%] -z-10 size-72 rounded-full bg-primary/14 blur-3xl dark:bg-primary/10" />
+      <div className="absolute bottom-[14%] right-[12%] -z-10 size-80 rounded-full bg-secondary/16 blur-3xl dark:bg-secondary/10" />
 
       <div className="absolute left-10 top-16">
         <FloatingBadge icon={ShieldCheck}>Secure Signup</FloatingBadge>
@@ -65,8 +66,8 @@ export default function Register(): ReactNode {
       </div>
 
       <div className="fade-up relative z-10 w-full max-w-6xl">
-        <div className="relative rounded-[2.25rem] border border-slate-200/70 bg-white/55 p-3 shadow-[0_24px_80px_rgba(15,23,42,0.10)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.035] dark:shadow-[0_24px_90px_rgba(0,0,0,0.28)]">
-          <div className="absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-[#33C3FF]/60 to-transparent" />
+        <div className="relative rounded-[2.25rem] border border-slate-200/70 bg-white/45 p-3 shadow-[0_24px_80px_rgba(15,23,42,0.10)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.035] dark:shadow-[0_24px_90px_rgba(0,0,0,0.28)]">
+          <div className="absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-secondary/60 to-transparent" />
 
           <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[2.25rem]">
             <div
@@ -75,26 +76,32 @@ export default function Register(): ReactNode {
             />
           </div>
 
-          <div className="relative grid overflow-hidden rounded-[1.8rem] border border-slate-200/70 bg-white/70 backdrop-blur-xl lg:grid-cols-[0.95fr_1.05fr] dark:border-white/10 dark:bg-white/[0.045]">
-            <section className="flex min-h-[640px] items-center justify-center px-5 py-8 sm:px-8">
+          <div className="relative grid overflow-hidden rounded-[1.8rem] border border-slate-200/70 bg-transparent backdrop-blur-xl lg:grid-cols-[0.95fr_1.05fr] dark:border-white/10">
+            <div className="absolute inset-0 bg-gradient-to-br from-white via-[#f4fbff] to-[#eef9ff] dark:from-[#06111f] dark:via-[#07192a] dark:to-[#08111f]" />
+
+            <div className="premium-grid absolute inset-0 opacity-55 dark:opacity-25" />
+
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(5,152,206,.22),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(51,195,255,.18),transparent_36%)] dark:bg-[radial-gradient(circle_at_top_left,rgba(5,152,206,.34),transparent_36%),radial-gradient(circle_at_bottom_right,rgba(51,195,255,.18),transparent_40%)]" />
+
+            <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-[48%] bg-gradient-to-r from-white/[0.22] via-white/[0.12] to-transparent lg:block dark:from-white/[0.035] dark:via-white/[0.018] dark:to-transparent" />
+
+            <div className="absolute -left-24 top-20 size-80 rounded-full bg-primary/16 blur-3xl dark:bg-primary/25" />
+            <div className="absolute -bottom-24 right-0 size-96 rounded-full bg-secondary/18 blur-3xl dark:bg-secondary/20" />
+
+            <section className="relative flex min-h-[640px] items-center justify-center px-5 py-8 sm:px-8">
               <RegisterForm />
             </section>
 
-            <section className="relative hidden min-h-[640px] flex-col justify-between overflow-hidden bg-gradient-to-br from-white via-[#f4fbff] to-[#eef9ff] p-10 text-slate-950 lg:flex dark:from-slate-950 dark:via-[#071a2a] dark:to-[#08111f] dark:text-white">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(5,152,206,.18),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(51,195,255,.22),transparent_36%)] dark:bg-[radial-gradient(circle_at_top_left,rgba(5,152,206,.36),transparent_36%),radial-gradient(circle_at_bottom_right,rgba(51,195,255,.22),transparent_38%)]" />
-              <div className="premium-grid absolute inset-0 opacity-55 dark:opacity-30" />
-              <div className="absolute -left-24 top-20 size-80 rounded-full bg-[#0598CE]/16 blur-3xl dark:bg-[#0598CE]/25" />
-              <div className="absolute -bottom-24 right-0 size-96 rounded-full bg-[#33C3FF]/18 blur-3xl dark:bg-[#33C3FF]/20" />
-
-              <div className="relative">
-                <div className="mb-8 inline-flex items-center gap-3 rounded-2xl border border-slate-200/70 bg-white/65 px-4 py-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/10">
-                  <div className="relative flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#0598CE] to-[#33C3FF] shadow-sm">
+            <section className="relative hidden min-h-[640px] flex-col justify-between overflow-hidden p-10 text-slate-950 lg:flex dark:text-white">
+              <div>
+                <div className="mb-8 inline-flex items-center gap-3 rounded-2xl border border-slate-200/70 bg-white/55 px-4 py-2.5 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.08]">
+                  <div className="relative flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-secondary shadow-sm">
                     <Activity className="size-5 text-white" />
-                    <span className="absolute -right-1 -top-1 size-3 rounded-full bg-[#33C3FF] ring-4 ring-white dark:ring-slate-950" />
+                    <span className="absolute -right-1 -top-1 size-3 rounded-full bg-secondary ring-4 ring-white dark:ring-[#06111f]" />
                   </div>
 
                   <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.26em] text-[#0598CE] dark:text-[#33C3FF]">
+                    <p className="text-[11px] font-black uppercase tracking-[0.26em] text-primary dark:text-secondary">
                       Live Polling System
                     </p>
                     <p className="text-xs font-medium text-slate-500 dark:text-slate-300">
@@ -115,9 +122,13 @@ export default function Register(): ReactNode {
               </div>
 
               <div className="relative grid gap-3">
-                <div className="rounded-3xl border border-slate-200/70 bg-white/65 p-5 backdrop-blur-xl dark:border-white/10 dark:bg-white/10">
+                <div className="pointer-events-none absolute right-6 top-1/2 hidden -translate-y-1/2 opacity-[0.08] xl:block">
+                  <CheckCircle2 className="size-56 text-primary dark:text-secondary" />
+                </div>
+
+                <div className="relative rounded-3xl border border-slate-200/70 bg-white/55 p-5 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.08]">
                   <div className="flex items-center gap-3">
-                    <div className="flex size-11 items-center justify-center rounded-2xl bg-[#0598CE]/12 text-[#0598CE] dark:bg-[#0598CE]/20 dark:text-[#33C3FF]">
+                    <div className="flex size-11 items-center justify-center rounded-2xl bg-primary/12 text-primary dark:bg-primary/20 dark:text-secondary">
                       <UserPlus className="size-5" />
                     </div>
 
@@ -132,9 +143,9 @@ export default function Register(): ReactNode {
                   </div>
                 </div>
 
-                <div className="rounded-3xl border border-slate-200/70 bg-white/65 p-5 backdrop-blur-xl dark:border-white/10 dark:bg-white/10">
+                <div className="relative rounded-3xl border border-slate-200/70 bg-white/55 p-5 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.08]">
                   <div className="flex items-center gap-3">
-                    <div className="flex size-11 items-center justify-center rounded-2xl bg-[#33C3FF]/14 text-[#0598CE] dark:bg-[#33C3FF]/20 dark:text-[#33C3FF]">
+                    <div className="flex size-11 items-center justify-center rounded-2xl bg-secondary/14 text-primary dark:bg-secondary/20 dark:text-secondary">
                       <Radio className="size-5" />
                     </div>
 
@@ -150,13 +161,9 @@ export default function Register(): ReactNode {
                 </div>
               </div>
 
-              <div className="relative flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
-                <Sparkles className="size-4 text-[#0598CE] dark:text-[#33C3FF]" />
+              <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+                <Sparkles className="size-4 text-primary dark:text-secondary" />
                 Professional tools for real-time audience interaction
-              </div>
-
-              <div className="pointer-events-none absolute right-8 top-1/2 hidden -translate-y-1/2 opacity-10 xl:block">
-                <CheckCircle2 className="size-56 text-[#0598CE] dark:text-[#33C3FF]" />
               </div>
             </section>
           </div>

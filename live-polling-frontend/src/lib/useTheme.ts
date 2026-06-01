@@ -7,7 +7,7 @@ const THEME_KEY = 'app-theme';
 function getInitialTheme(): ThemeMode {
   const stored = localStorage.getItem(THEME_KEY) as ThemeMode | null;
   if (stored === 'dark' || stored === 'light') return stored;
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  return 'dark';
 }
 
 function applyTheme(mode: ThemeMode) {

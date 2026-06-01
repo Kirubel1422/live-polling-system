@@ -139,9 +139,9 @@ export default function ParticipantPresentation() {
       case "quiz":
       case "image-choice":
         return (
-          <div className="flex h-full md:max-w-md lg:max-w-xl mx-auto flex-col p-6 overflow-hidden">
+          <div className="flex md:max-w-md lg:max-w-xl mx-auto h-full flex-col justify-center p-6">
             <h3 className="mb-6 text-center text-xl font-semibold leading-tight" dangerouslySetInnerHTML={{ __html: slide.title }} />
-            <div className="flex flex-1 px-2 pt-2 flex-col gap-3 overflow-y-auto pb-4">
+            <div className="flex w-full px-2 pt-2 flex-col gap-3 overflow-y-auto pb-4 max-h-[60vh]">
               {slide.options?.map((option: any, index: number) => (
                 <button
                   key={option.id}
@@ -157,7 +157,7 @@ export default function ParticipantPresentation() {
               ))}
             </div>
             <Button 
-              className="mt-2 w-full shrink-0 h-14 text-lg font-bold rounded-xl" 
+              className="mt-2 w-full shrink-0 h-14 text-lg font-bold rounded-xl bg-primary" 
               style={{ backgroundColor: slide.theme.accentColor, color: "#fff" }}
               onClick={handleSubmit}
               disabled={isSubmitting || !answer}
@@ -170,9 +170,9 @@ export default function ParticipantPresentation() {
       case "open-ended":
       case "word-cloud":
         return (
-          <div className="flex md:max-w-md lg:max-w-xl mx-auto h-full flex-col p-6">
+          <div className="flex md:max-w-md lg:max-w-xl mx-auto h-full flex-col justify-center p-6">
             <h3 className="mb-6 text-center text-xl font-semibold leading-tight" dangerouslySetInnerHTML={{ __html: slide.title }} />
-            <div className="flex-1">
+            <div className="w-full">
               <textarea
                 className="h-40 w-full rounded-xl border-2 p-4 text-lg focus:outline-none focus:ring-4 transition-all"
                 style={{ 
@@ -249,7 +249,7 @@ export default function ParticipantPresentation() {
         };
 
         return (
-          <div className="flex md:max-w-md lg:max-w-xl mx-auto h-full flex-col p-6 overflow-hidden">
+          <div className="flex md:max-w-md lg:max-w-xl mx-auto h-full flex-col justify-center p-6">
             <h3 className="mb-4 text-center text-xl font-semibold leading-tight shrink-0" dangerouslySetInnerHTML={{ __html: slide.title }} />
             
             {/* Ask Question Form */}
@@ -276,7 +276,7 @@ export default function ParticipantPresentation() {
             </div>
 
             {/* List of existing questions */}
-            <div className="flex-1 flex flex-col gap-3 overflow-y-auto pb-4">
+            <div className="w-full flex flex-col gap-3 overflow-y-auto pb-4 max-h-[50vh]">
               {uniqueQuestions.length === 0 ? (
                 <p className="text-center text-muted-foreground my-8">No questions asked yet. Be the first!</p>
               ) : (
@@ -320,7 +320,7 @@ export default function ParticipantPresentation() {
         const emojis = ["😡", "😕", "😐", "🙂", "😊"];
 
         return (
-          <div className="flex h-full flex-col p-6 items-center justify-center text-center">
+          <div className="flex md:max-w-md lg:max-w-xl mx-auto h-full flex-col justify-center p-6">
             <h3 className="mb-10 text-2xl font-semibold" dangerouslySetInnerHTML={{ __html: slide.title }} />
             
             {ratingType === "stars" && (
@@ -382,7 +382,7 @@ export default function ParticipantPresentation() {
         const scalesRightLabel = Array.isArray(scalesLabels) ? scalesLabels[scalesLabels.length - 1] : scalesLabels?.right || "Strongly Agree";
 
         return (
-          <div className="flex h-full md:max-w-md lg:max-w-xl mx-auto flex-col p-6 items-center justify-center text-center">
+          <div className="flex md:max-w-md lg:max-w-xl mx-auto h-full flex-col justify-center p-6">
             <h3 className="mb-10 text-2xl font-semibold leading-tight" dangerouslySetInnerHTML={{ __html: slide.title }} />
             <div className="flex justify-between w-full mb-4">
               {Array.from({ length: steps }).map((_, i) => (
@@ -438,10 +438,10 @@ export default function ParticipantPresentation() {
         };
 
         return (
-          <div className="flex h-full flex-col p-6">
+          <div className="flex md:max-w-md lg:max-w-xl mx-auto h-full flex-col justify-center p-6">
             <h3 className="mb-2 text-center text-xl font-semibold leading-tight" dangerouslySetInnerHTML={{ __html: slide.title }} />
             <p className="mb-6 text-center text-sm font-medium opacity-70">Drag and drop to rank items</p>
-            <div className="flex flex-1 flex-col gap-3 overflow-y-auto pb-4">
+            <div className="flex w-full flex-col gap-3 overflow-y-auto pb-4 max-h-[60vh]">
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <SortableContext items={orderedItems.map((i: any) => i.id)} strategy={verticalListSortingStrategy}>
                   {orderedItems.map((item: any, index: number) => (
@@ -485,12 +485,12 @@ export default function ParticipantPresentation() {
         const remainingPoints = maxPoints - allocatedPoints;
 
         return (
-          <div className="flex h-full md:max-w-md lg:max-w-xl mx-auto flex-col p-6">
+          <div className="flex md:max-w-md lg:max-w-xl mx-auto h-full flex-col justify-center p-6">
             <h3 className="mb-2 text-center text-xl font-semibold leading-tight" dangerouslySetInnerHTML={{ __html: slide.title }} />
             <div className="mb-6 text-center font-medium" style={{ color: remainingPoints === 0 ? '#10b981' : remainingPoints < 0 ? '#ef4444' : slide.theme.textColor }}>
               {remainingPoints === 0 ? "All points allocated!" : remainingPoints > 0 ? `${remainingPoints} points remaining` : `${Math.abs(remainingPoints)} points over limit`}
             </div>
-            <div className="flex flex-1 flex-col gap-3 overflow-y-auto pb-4">
+            <div className="flex w-full flex-col gap-3 overflow-y-auto pb-4 max-h-[60vh]">
               {pointsListItems.map((item: any, i: number) => (
                 <div key={item.id || i} className="flex items-center p-4 rounded-xl border-2" style={{ borderColor: slide.theme.accentColor + "40", backgroundColor: "rgba(255,255,255,0.05)" }}>
                   <div className="flex-1 text-base font-medium" dangerouslySetInnerHTML={{ __html: item.text || `Item ${i+1}` }} />
@@ -519,7 +519,7 @@ export default function ParticipantPresentation() {
 
       case "number":
         return (
-          <div className="flex h-full flex-col p-6 items-center justify-center">
+          <div className="flex md:max-w-md lg:max-w-xl mx-auto h-full flex-col justify-center p-6">
             <h3 className="mb-10 text-center text-2xl font-semibold leading-tight" dangerouslySetInnerHTML={{ __html: slide.title }} />
             <input 
               type="number" 
@@ -546,7 +546,7 @@ export default function ParticipantPresentation() {
       case "image":
       case "quote":
         return (
-          <div className="flex h-full flex-col p-8 items-center justify-center text-center">
+          <div className="flex md:max-w-md lg:max-w-xl mx-auto h-full flex-col justify-center p-6">
             <h3 className="mb-6 text-3xl font-bold" dangerouslySetInnerHTML={{ __html: slide.title }} />
             {slide.subtitle && <p className="text-xl opacity-80" dangerouslySetInnerHTML={{ __html: slide.subtitle }} />}
             <div className="mt-12 text-sm font-medium opacity-50">Look at the presenter's screen</div>

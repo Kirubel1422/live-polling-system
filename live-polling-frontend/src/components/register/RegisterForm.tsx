@@ -64,8 +64,7 @@ export function RegisterForm(): ReactNode {
   const apiBase = ENV.API_URL;
 
   return (
-    <div className="w-full max-w-md rounded-2xl bg-white/[0.88] px-8 py-9 backdrop-blur-xl dark:bg-white/[0.06]">
-      <div className="mb-8 flex flex-col items-center text-center">
+    <div className="w-full max-w-md rounded-2xl bg-white/[0.88] px-8 py-9 backdrop-blur-xl dark:bg-white/[0.045]">      <div className="mb-8 flex flex-col items-center text-center">
         <div className="mb-5 flex size-14 items-center justify-center rounded-2xl bg-primary/10">
           <UserPlus className="size-7 text-primary" />
         </div>

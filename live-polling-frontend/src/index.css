@@ -249,3 +249,53 @@
   background-size: 54px 54px;
   mask-image: radial-gradient(circle at center, black, transparent 74%);
 }
+
+@keyframes start-float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes start-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(28px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes start-shimmer {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+.start-fade-up {
+  animation: start-fade-up 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.start-float {
+  animation: start-float 6s ease-in-out infinite;
+}
+
+.start-shimmer {
+  animation: start-shimmer 7s ease-in-out infinite;
+}
+
+.start-premium-grid {
+  background-image:
+    linear-gradient(rgba(5, 152, 206, 0.075) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(5, 152, 206, 0.075) 1px, transparent 1px);
+  background-size: 54px 54px;
+  mask-image: radial-gradient(circle at center, black, transparent 72%);
+}

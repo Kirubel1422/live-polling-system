@@ -62,7 +62,7 @@ export function LoginForm(): ReactNode {
   const apiBase = ENV.API_URL;
 
   return (
-    <div className="w-full max-w-md px-8 py-9 rounded-2xl bg-white/[0.88] dark:bg-white/[0.06] backdrop-blur-xl">
+    <div className="w-full max-w-md px-8 py-9 rounded-2xl bg-white/[0.88] dark:bg-white/[0.045] backdrop-blur-xl">
       <div className="mb-8 flex flex-col items-center text-center">
         <div className="mb-5 flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0598CE]/15 to-[#33C3FF]/10">
           <ShieldCheck className="size-7 text-[#0598CE]" />
