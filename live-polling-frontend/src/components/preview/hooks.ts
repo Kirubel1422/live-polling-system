@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAppSelector } from "@/store/hooks";
 import { io, Socket } from "socket.io-client";
 import { ENV } from "@/config/env";
 import { toast } from "sonner";
 import { type SlideResponses } from "@/components/editor/SlideCanvas";
+import { useGetSessionDataQuery, useKickParticipantMutation } from "@/api/participant.api";
 
 export function usePreviewHandlers() {
   const { presentationId } = useParams<{ presentationId: string }>();
@@ -14,14 +15,57 @@ export function usePreviewHandlers() {
     state.presentations.items.find((p) => p.id === presentationId),
   );
 
+  const { data: sessionData } = useGetSessionDataQuery(presentationId || "", { skip: !presentationId });
+
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [showPhoneMockup, setShowPhoneMockup] = useState(true);
   const [showQRCode, setShowQRCode] = useState(false);
-  const [participantsCount, setParticipantsCount] = useState(0);
+  const [participants, setParticipants] = useState<any[]>([]);
   const [socket, setSocket] = useState<Socket | null>(null);
   const [slideResponses, setSlideResponses] = useState<SlideResponses>({});
+  
+  const [kickParticipant] = useKickParticipantMutation();
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
+
+  const handleToggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch (error) {
+      console.error("Failed to toggle fullscreen mode", error);
+    }
+  };
 
   const presentationUrl = `${window.location.origin}/start/participant`;
+
+  const participantLastSeen = useRef<Record<string, number>>({});
+
+  useEffect(() => {
+    if (sessionData?.participants) {
+      setParticipants(sessionData.participants);
+      const now = Date.now();
+      sessionData.participants.forEach((p: any) => {
+        if (!participantLastSeen.current[p.id]) {
+          participantLastSeen.current[p.id] = now;
+        }
+      });
+    }
+  }, [sessionData]);
 
   // Socket connection
   useEffect(() => {
@@ -33,7 +77,8 @@ export function usePreviewHandlers() {
     newSocket.emit("join-presentation", presentationId);
 
     newSocket.on("participant-joined", (participant: any) => {
-      setParticipantsCount((prev) => prev + 1);
+      setParticipants((prev) => [...prev, participant]);
+      participantLastSeen.current[participant.id] = Date.now();
       toast.success(`${participant.name} joined!`);
     });
 
@@ -41,10 +86,14 @@ export function usePreviewHandlers() {
       console.log("[Socket.io] Received participant-response in usePreviewHandlers:", data);
       setSlideResponses((prev) => {
         const slideData = prev[data.slideId] || [];
-        const nextValue = data.response.value;
+        const nextValue = data.response;
         
         console.log("[Socket.io] Appending value:", nextValue, "for slideId:", data.slideId);
         
+        if (slideData.some((r: any) => r.id === nextValue.id)) {
+          return prev;
+        }
+
         const updated = {
           ...prev,
           [data.slideId]: [...slideData, nextValue],
@@ -55,6 +104,61 @@ export function usePreviewHandlers() {
       toast.info(`New response received!`);
     });
 
+    newSocket.on("participant-response-updated", (data: any) => {
+      console.log("[Socket.io] Received participant-response-updated in usePreviewHandlers:", data);
+      setSlideResponses((prev) => {
+        const slideData = prev[data.slideId] || [];
+        const updatedData = slideData.map((r: any) => 
+          r.id === data.response.id ? data.response : r
+        );
+        return {
+          ...prev,
+          [data.slideId]: updatedData,
+        };
+      });
+    });
+
+    newSocket.on("participant-kicked", (data: any) => {
+      const kickedParticipantId = typeof data === 'string' ? data : data.participantId;
+      setParticipants((prev) => prev.filter(p => p.id !== kickedParticipantId));
+      toast.info(`A participant was kicked.`);
+    });
+
+    newSocket.on("participant-ping", (data: { presentationId: string, participantId: string }) => {
+      participantLastSeen.current[data.participantId] = Date.now();
+      newSocket.emit("presenter-pong", data);
+    });
+
+    newSocket.on("participant-alive", (data: { presentationId: string, participantId: string }) => {
+      participantLastSeen.current[data.participantId] = Date.now();
+    });
+
+    newSocket.on("existing-participants", (participantsData: any[]) => {
+      console.log("[Socket.io] Received existing participants in usePreviewHandlers:", participantsData);
+      setParticipants(participantsData);
+      const now = Date.now();
+      participantsData.forEach((p: any) => {
+        participantLastSeen.current[p.id] = now;
+      });
+    });
+
+    const staleCheckInterval = setInterval(() => {
+      const now = Date.now();
+      setParticipants((prev) => {
+        const active = prev.filter((p) => {
+          const lastSeen = participantLastSeen.current[p.id];
+          if (lastSeen && now - lastSeen > 65000) {
+            console.log(`[Socket.io] Removing stale participant ${p.id} due to inactivity`);
+            newSocket.emit("remove-participant", p.id);
+            toast.info(`${p.name} disconnected`);
+            return false;
+          }
+          return true;
+        });
+        return active;
+      });
+    }, 30000);
+
     newSocket.on("existing-responses", (responses: any[]) => {
       console.log("[Socket.io] Received existing responses in usePreviewHandlers:", responses);
       setSlideResponses((prev) => {
@@ -62,7 +166,9 @@ export function usePreviewHandlers() {
         responses.forEach((resp) => {
           const slideId = resp.slideId;
           const slideData = updated[slideId] || [];
-          updated[slideId] = [...slideData, resp.value];
+          if (!slideData.some((r: any) => r.id === resp.id)) {
+            updated[slideId] = [...slideData, resp];
+          }
         });
         console.log("[Socket.io] Populated slideResponses:", updated);
         return updated;
@@ -70,6 +176,7 @@ export function usePreviewHandlers() {
     });
 
     return () => {
+      clearInterval(staleCheckInterval);
       newSocket.disconnect();
     };
   }, [presentationId]);
@@ -125,8 +232,8 @@ export function usePreviewHandlers() {
     setShowPhoneMockup,
     showQRCode,
     setShowQRCode,
-    participantsCount,
-    setParticipantsCount,
+    participants,
+    setParticipants,
     slideResponses,
     setSlideResponses,
     presentationUrl,
@@ -134,5 +241,8 @@ export function usePreviewHandlers() {
     progress,
     goToNextSlide,
     goToPrevSlide,
+    kickParticipant,
+    isFullscreen,
+    handleToggleFullscreen,
   };
 }
