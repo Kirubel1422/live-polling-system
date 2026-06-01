@@ -3,6 +3,7 @@ import { LiveSessionEntity } from "src/entities/LiveSession.entity";
 import { ParticipantEntity } from "src/entities/Participant.entity";
 import { ParticipantResponseEntity } from "src/entities/ParticipantResponse.entity";
 import { PresentationEntity } from "src/entities/Presentation.entity";
+import { SlideEntity } from "src/entities/Slide.entity";
 import { ApiError } from "src/utils/api/api.response";
 import { getSocketIO } from "src/utils/socket";
 
@@ -11,14 +12,19 @@ export class ParticipantService {
   private participantRepo = AppDataSource.getRepository(ParticipantEntity);
   private responseRepo = AppDataSource.getRepository(ParticipantResponseEntity);
   private presentationRepo = AppDataSource.getRepository(PresentationEntity);
+  private slideRepo = AppDataSource.getRepository(SlideEntity);
 
-  async joinSession(joinCode: string, name: string) {
+  async joinSession(joinCode: string, name: string, cookies?: any) {
     const presentation = await this.presentationRepo.findOne({
       where: { joinCode },
     });
 
     if (!presentation) {
       throw new ApiError("Invalid join code", 404);
+    }
+
+    if (cookies && cookies[`blocked_${presentation.id}`]) {
+      throw new ApiError("You have been permanently blocked from this presentation.", 403);
     }
     
     // Find or create an active live session for this presentation
@@ -76,7 +82,7 @@ export class ParticipantService {
 
     const presentation = await this.presentationRepo.findOne({
       where: { id: presentationId },
-      relations: ["slides", "slides.options"],
+      relations: ["slides", "slides.options", "slides.responses"],
     });
 
     if (!presentation) {
@@ -85,9 +91,15 @@ export class ParticipantService {
     
     presentation.slides.sort((a, b) => a.order - b.order);
 
+    const participants = await this.participantRepo.find({
+      where: { sessionId: session.id },
+      order: { joinedAt: "ASC" }
+    });
+
     return {
       session,
       presentation,
+      participants,
     };
   }
 
@@ -101,6 +113,11 @@ export class ParticipantService {
       throw new ApiError("Participant not found", 404);
     }
 
+    const slide = await this.slideRepo.findOne({ where: { id: slideId } });
+    if (!slide) {
+      throw new ApiError("Slide not found", 404);
+    }
+
     const existingResponse = await this.responseRepo.findOne({
       where: { participantId, slideId },
     });
@@ -109,8 +126,17 @@ export class ParticipantService {
       throw new ApiError("You have already responded to this slide", 400);
     }
 
+    let formattedValue = value;
+    if (slide.type === "qa") {
+      formattedValue = {
+        text: typeof value === 'string' ? value : (value?.text || ""),
+        upvotes: 0,
+        upvotedBy: []
+      };
+    }
+
     const response = this.responseRepo.create({
-      value,
+      value: formattedValue,
       slideId,
       sessionId: participant.session.id,
       participantId: participant.id,
@@ -125,5 +151,83 @@ export class ParticipantService {
     });
 
     return response;
+  }
+
+  async upvoteResponse(participantId: string, responseId: string) {
+    const participant = await this.participantRepo.findOne({
+      where: { id: participantId },
+      relations: ["session"],
+    });
+
+    if (!participant) {
+      throw new ApiError("Participant not found", 404);
+    }
+
+    const response = await this.responseRepo.findOne({
+      where: { id: responseId }
+    });
+
+    if (!response) {
+      throw new ApiError("Question response not found", 404);
+    }
+
+    let val: any = response.value;
+    if (typeof val === 'string') {
+      val = { text: val, upvotes: 0, upvotedBy: [] };
+    } else if (typeof val === 'object' && val !== null) {
+      if (!val.text) {
+        val.text = val.value || "";
+      }
+      if (typeof val.upvotes !== 'number') {
+        val.upvotes = 0;
+      }
+      if (!Array.isArray(val.upvotedBy)) {
+        val.upvotedBy = [];
+      }
+    } else {
+      val = { text: String(val), upvotes: 0, upvotedBy: [] };
+    }
+
+    if (val.upvotedBy.includes(participantId)) {
+      throw new ApiError("You have already upvoted this question", 400);
+    }
+
+    val.upvotedBy.push(participantId);
+    val.upvotes = (val.upvotes || 0) + 1;
+
+    response.value = val;
+    await this.responseRepo.save(response);
+
+    getSocketIO().to(`presentation:${participant.session.presentationId}`).emit("participant-response-updated", {
+      slideId: response.slideId,
+      response
+    });
+
+    return response;
+  }
+
+  async kickParticipant(participantId: string) {
+    const participant = await this.participantRepo.findOne({
+      where: { id: participantId },
+      relations: ["session"]
+    });
+
+    if (!participant) {
+      throw new ApiError("Participant not found", 404);
+    }
+
+    const presentationId = participant.session.presentationId;
+
+    await this.participantRepo.remove(participant);
+
+    const randomValue = Math.random().toString(36).substring(2);
+
+    getSocketIO().to(`presentation:${presentationId}`).emit("participant-kicked", {
+      participantId,
+      cookieKey: `blocked_${presentationId}`,
+      cookieValue: randomValue
+    });
+    
+    return presentationId;
   }
 }
