@@ -79,20 +79,11 @@ export default function JoinPage() {
         <span className="size-2 rounded-full bg-[#0598CE] animate-ping inline-block" />
       </div>
 
-      <style>{`
-        @keyframes fadein {
-          from { opacity: 0; transform: translateY(20px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        .fadein   { animation: fadein 0.6s cubic-bezier(.22,1,.36,1) both; }
-        .fadein-2 { animation: fadein 0.6s cubic-bezier(.22,1,.36,1) 0.12s both; }
-        .fadein-3 { animation: fadein 0.6s cubic-bezier(.22,1,.36,1) 0.24s both; }
-      `}</style>
 
       <div className="w-full max-w-md relative z-10">
 
         {/* Header */}
-        <div className="fadein text-center mb-6">
+        <div className="fi text-center mb-6">
           {/* Brand badge — same as StartPage */}
           <div className="inline-flex items-center gap-3 bg-white dark:bg-slate-800/90 backdrop-blur rounded-2xl shadow-lg border border-[#0598CE]/20 px-5 py-3 mb-5">
             <div className="p-1.5 bg-gradient-to-br from-[#0598CE] to-[#33C3FF] rounded-xl">
@@ -119,7 +110,7 @@ export default function JoinPage() {
         </div>
 
         {/* Card */}
-        <div className="fadein-2 relative bg-white/80 dark:bg-white/[0.05] backdrop-blur-xl border border-slate-200/80 dark:border-white/10 p-8 rounded-3xl shadow-xl overflow-hidden">
+        <div className="fi fi-2 relative bg-white/80 dark:bg-white/[0.05] backdrop-blur-xl border border-slate-200/80 dark:border-white/10 p-8 rounded-3xl shadow-xl overflow-hidden">
           {/* Top accent bar */}
           <div className="absolute top-0 left-0 right-0 h-1 rounded-t-3xl bg-gradient-to-r from-[#0598CE] to-[#33C3FF]" />
 
@@ -177,7 +168,7 @@ export default function JoinPage() {
           </form>
         </div>
 
-        <p className="fadein-3 mt-5 text-xs text-center text-slate-400 dark:text-slate-600">
+        <p className="fi fi-3 mt-5 text-xs text-center text-slate-400 dark:text-slate-600">
           No account needed · Just enter your code and name
         </p>
       </div>

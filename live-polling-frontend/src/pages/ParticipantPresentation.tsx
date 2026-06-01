@@ -1,46 +1,55 @@
-import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useGetSessionDataQuery, useSubmitResponseMutation } from '@/api/participant.api';
 import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { io } from 'socket.io-client';
-import { ENV } from '@/config/env';
+import { Loader2, ThumbsUp, WifiOff } from 'lucide-react';
+import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { useParticipantPresentation } from '@/components/participant-presentation/hook';
+import { CSS } from '@dnd-kit/utilities';
+
+function SortableRankingItem({ id, children, color }: { id: string; children: React.ReactNode; color: string }) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    borderColor: color + "40",
+    backgroundColor: "rgba(255,255,255,0.05)",
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className="flex items-center p-4 rounded-xl border-2 touch-none cursor-grab active:cursor-grabbing hover:bg-white/10 transition-colors"
+    >
+      {children}
+    </div>
+  );
+}
 
 export default function ParticipantPresentation() {
-  const { presentationId } = useParams();
-  const navigate = useNavigate();
-  const { data, isLoading, error } = useGetSessionDataQuery(presentationId as string);
-  const [submitResponse, { isLoading: isSubmitting }] = useSubmitResponseMutation();
-  
-  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
-  const [answer, setAnswer] = useState<any>(null);
-  const [hasSubmitted, setHasSubmitted] = useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    if (!presentationId) return;
-
-    // Connect to websocket
-    const socket = io(ENV.SOCKET_URL, { withCredentials: true });
-    
-    socket.emit('join-presentation', presentationId);
-    
-    socket.on('slide-changed', (newIndex: number) => {
-      setCurrentSlideIndex(newIndex);
-      setAnswer(null); // reset answer when slide changes
-    });
-
-    return () => {
-      socket.disconnect();
-    };
-  }, [presentationId]);
-
-  useEffect(() => {
-    // If the backend returned initial data, sync index
-    if (data?.session) {
-      setCurrentSlideIndex(data.session.currentSlideIndex);
-    }
-  }, [data]);
+  const {
+    presentationId,
+    navigate,
+    data,
+    isLoading,
+    error,
+    submitResponse,
+    isSubmitting,
+    upvoteResponse,
+    isUpvoting,
+    currentSlideIndex,
+    answer,
+    setAnswer,
+    hasSubmitted,
+    slideResponses,
+    isKicked,
+    isPresenterOffline,
+    sensors,
+    handleSubmit,
+  } = useParticipantPresentation();
 
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin size-8" /></div>;
@@ -60,6 +69,42 @@ export default function ParticipantPresentation() {
   const slide = presentation.slides[currentSlideIndex];
   const participantId = localStorage.getItem(`participant_${presentationId}`);
 
+  if (isPresenterOffline) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-[#1a1a2e]">
+        <div className="size-24 rounded-full bg-[#0598CE]/10 flex items-center justify-center mb-6 animate-pulse">
+          <WifiOff className="size-12 text-[#0598CE]/70" />
+        </div>
+        <h2 className="text-3xl font-bold text-white mb-4">Waiting for Presenter</h2>
+        <p className="text-lg text-white/70 max-w-md">
+          The presenter seems to be offline or experiencing connection issues. Please hold tight, we'll reconnect automatically as soon as they return.
+        </p>
+        <div className="mt-8 flex gap-2 justify-center">
+          <span className="size-2 rounded-full bg-[#0598CE]/50 animate-bounce" style={{ animationDelay: "0ms" }} />
+          <span className="size-2 rounded-full bg-[#0598CE]/50 animate-bounce" style={{ animationDelay: "150ms" }} />
+          <span className="size-2 rounded-full bg-[#0598CE]/50 animate-bounce" style={{ animationDelay: "300ms" }} />
+        </div>
+      </div>
+    );
+  }
+
+  if (isKicked) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-[#1a1a2e]">
+        <div className="size-24 rounded-full bg-red-500/20 flex items-center justify-center mb-6">
+          <svg className="size-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+          </svg>
+        </div>
+        <h2 className="text-3xl font-bold text-white mb-4">You've been kicked out</h2>
+        <p className="text-lg text-white/70 mb-8 max-w-md">
+          The presenter has removed you from this live presentation session.
+        </p>
+        <Button size="lg" onClick={() => navigate('/start')}>Back to Start</Button>
+      </div>
+    );
+  }
+
   if (!participantId) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
@@ -69,35 +114,11 @@ export default function ParticipantPresentation() {
     );
   }
 
-  const handleSubmit = async () => {
-    if (answer === null || answer === undefined || answer === '') {
-      return toast.error("Please provide an answer before submitting.");
-    }
-
-    try {
-      await submitResponse({
-        participantId,
-        slideId: slide.id,
-        value: answer
-      }).unwrap();
-      
-      setHasSubmitted(prev => ({ ...prev, [slide.id]: true }));
-      toast.success("Response submitted!");
-    } catch (err: any) {
-      const errorMsg = err.data?.message || err.message || "Failed to submit response";
-      if (errorMsg.toLowerCase().includes("already responded")) {
-        setHasSubmitted(prev => ({ ...prev, [slide.id]: true }));
-        toast.info("You've already submitted an answer for this slide!");
-      } else {
-        toast.error(errorMsg);
-      }
-    }
-  };
 
   const renderContent = () => {
     if (!slide) return <div className="text-center p-8">Waiting for slide...</div>;
 
-    if (hasSubmitted[slide.id]) {
+    if (hasSubmitted[slide.id] && slide.type !== "qa") {
       return (
         <div className="flex flex-col items-center justify-center h-full text-center p-8">
           <div className="size-16 rounded-full bg-white/20 flex items-center justify-center mb-4">
@@ -118,9 +139,9 @@ export default function ParticipantPresentation() {
       case "quiz":
       case "image-choice":
         return (
-          <div className="flex h-full flex-col p-6 overflow-hidden">
+          <div className="flex h-full md:max-w-md lg:max-w-xl mx-auto flex-col p-6 overflow-hidden">
             <h3 className="mb-6 text-center text-xl font-semibold leading-tight" dangerouslySetInnerHTML={{ __html: slide.title }} />
-            <div className="flex flex-1 flex-col gap-3 overflow-y-auto pb-4">
+            <div className="flex flex-1 px-2 pt-2 flex-col gap-3 overflow-y-auto pb-4">
               {slide.options?.map((option: any, index: number) => (
                 <button
                   key={option.id}
@@ -131,7 +152,7 @@ export default function ParticipantPresentation() {
                   <span className="mr-3 flex size-8 shrink-0 items-center justify-center rounded-full bg-white/20 text-sm">
                     {String.fromCharCode(65 + index)}
                   </span>
-                  <span className="text-lg">{option.text || `Option ${index + 1}`}</span>
+                  <span className="text-lg" dangerouslySetInnerHTML={{__html: option.text || `Option ${index + 1}`}}/>
                 </button>
               ))}
             </div>
@@ -148,9 +169,8 @@ export default function ParticipantPresentation() {
 
       case "open-ended":
       case "word-cloud":
-      case "qa":
         return (
-          <div className="flex h-full flex-col p-6">
+          <div className="flex md:max-w-md lg:max-w-xl mx-auto h-full flex-col p-6">
             <h3 className="mb-6 text-center text-xl font-semibold leading-tight" dangerouslySetInnerHTML={{ __html: slide.title }} />
             <div className="flex-1">
               <textarea
@@ -176,6 +196,120 @@ export default function ParticipantPresentation() {
             </Button>
           </div>
         );
+
+      case "qa": {
+        const responsesList = slideResponses[slide.id] || [];
+        
+        const liveQuestions = responsesList.map((r: any, idx: number) => {
+          if (typeof r === 'string') {
+            return { id: r, text: r, upvotes: 0, upvotedBy: [] };
+          }
+          const val = r.value || {};
+          return {
+            id: r.id || `fallback-${idx}`,
+            text: typeof val === 'string' ? val : (val.text || ""),
+            upvotes: typeof val === 'object' ? (val.upvotes || 0) : 0,
+            upvotedBy: typeof val === 'object' ? (val.upvotedBy || []) : []
+          };
+        });
+
+        // Deduplicate in case there are still undefined ID copies or string duplicates
+        const uniqueQuestions = Array.from(new Map(liveQuestions.map((q) => [q.id || q.text, q])).values());
+
+        // Sort questions by upvotes descending
+        uniqueQuestions.sort((a, b) => b.upvotes - a.upvotes);
+
+        const handleAskQuestion = async () => {
+          if (!answer || !answer.trim()) return;
+          try {
+            await submitResponse({
+              participantId,
+              slideId: slide.id,
+              value: answer.trim()
+            }).unwrap();
+            setAnswer('');
+            toast.success("Question submitted!");
+          } catch (err: any) {
+            const errorMsg = err.data?.message || err.message || "Failed to submit question";
+            toast.error(errorMsg);
+          }
+        };
+
+        const handleUpvote = async (responseId: string) => {
+          try {
+            await upvoteResponse({
+              participantId: participantId as string,
+              responseId
+            }).unwrap();
+            toast.success("Upvoted!");
+          } catch (err: any) {
+            const errorMsg = err.data?.message || err.message || "Failed to upvote question";
+            toast.error(errorMsg);
+          }
+        };
+
+        return (
+          <div className="flex md:max-w-md lg:max-w-xl mx-auto h-full flex-col p-6 overflow-hidden">
+            <h3 className="mb-4 text-center text-xl font-semibold leading-tight shrink-0" dangerouslySetInnerHTML={{ __html: slide.title }} />
+            
+            {/* Ask Question Form */}
+            <div className="flex gap-2 mb-6 shrink-0">
+              <input
+                type="text"
+                className="flex-1 h-12 rounded-xl border-2 px-4 focus:outline-none focus:ring-2 transition-all bg-black/25 text-white"
+                style={{ borderColor: slide.theme.accentColor + "60", '--tw-ring-color': slide.theme.accentColor } as any}
+                placeholder="Ask a question..."
+                value={typeof answer === 'string' ? answer : ''}
+                onChange={(e) => setAnswer(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleAskQuestion();
+                }}
+              />
+              <Button
+                className="h-12 px-6 rounded-xl font-bold"
+                style={{ backgroundColor: slide.theme.accentColor, color: "#fff" }}
+                onClick={handleAskQuestion}
+                disabled={isSubmitting || !answer || !String(answer).trim()}
+              >
+                Send
+              </Button>
+            </div>
+
+            {/* List of existing questions */}
+            <div className="flex-1 flex flex-col gap-3 overflow-y-auto pb-4">
+              {uniqueQuestions.length === 0 ? (
+                <p className="text-center text-muted-foreground my-8">No questions asked yet. Be the first!</p>
+              ) : (
+                uniqueQuestions.map((q) => {
+                  const hasAlreadyUpvoted = q.upvotedBy.includes(participantId);
+                  return (
+                    <div
+                      key={q.id}
+                      className="flex items-center gap-3 rounded-xl p-4 border border-white/10"
+                      style={{ backgroundColor: slide.theme.textColor + "08" }}
+                    >
+                      <div 
+                        className="flex-1 font-medium" 
+                        style={{ color: slide.theme.textColor }} 
+                        dangerouslySetInnerHTML={{ __html: q.text }} 
+                      />
+                      <button
+                        onClick={() => handleUpvote(q.id)}
+                        disabled={isUpvoting || hasAlreadyUpvoted}
+                        className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-lg active:scale-95 transition-all text-xs font-semibold shrink-0 ${hasAlreadyUpvoted ? 'bg-white/20 opacity-80 cursor-not-allowed' : 'bg-white/5 hover:bg-white/10'}`}
+                        style={{ color: slide.theme.accentColor }}
+                      >
+                        <ThumbsUp className={`size-4 ${hasAlreadyUpvoted ? 'fill-current' : ''}`} />
+                        <span>{q.upvotes}</span>
+                      </button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        );
+      }
 
       case "rating":
         const ratingMeta = slide.meta || {};
@@ -248,7 +382,7 @@ export default function ParticipantPresentation() {
         const scalesRightLabel = Array.isArray(scalesLabels) ? scalesLabels[scalesLabels.length - 1] : scalesLabels?.right || "Strongly Agree";
 
         return (
-          <div className="flex h-full flex-col p-6 items-center justify-center text-center">
+          <div className="flex h-full md:max-w-md lg:max-w-xl mx-auto flex-col p-6 items-center justify-center text-center">
             <h3 className="mb-10 text-2xl font-semibold leading-tight" dangerouslySetInnerHTML={{ __html: slide.title }} />
             <div className="flex justify-between w-full mb-4">
               {Array.from({ length: steps }).map((_, i) => (
@@ -272,8 +406,8 @@ export default function ParticipantPresentation() {
               ))}
             </div>
             <div className="flex justify-between w-full mt-4 text-sm font-medium opacity-80">
-              <span>{scalesLeftLabel}</span>
-              <span>{scalesRightLabel}</span>
+              <span dangerouslySetInnerHTML={{ __html: scalesLeftLabel }} />
+              <span dangerouslySetInnerHTML={{ __html: scalesRightLabel }} />
             </div>
             <Button 
               className="mt-12 w-full h-14 text-lg font-bold rounded-xl" 
@@ -286,35 +420,88 @@ export default function ParticipantPresentation() {
           </div>
         );
 
-      case "ranking":
-      case "100-points":
+      case "ranking": {
         const listItems = slide.items || slide.options || [];
+        const orderedItems = (Array.isArray(answer) ? answer : listItems.map((i: any) => i.id))
+          .map((id: string) => listItems.find((i: any) => i.id === id))
+          .filter(Boolean);
+
+        const handleDragEnd = (event: DragEndEvent) => {
+          const { active, over } = event;
+          if (over && active.id !== over.id) {
+            setAnswer((items: string[]) => {
+              const oldIndex = items.indexOf(active.id as string);
+              const newIndex = items.indexOf(over.id as string);
+              return arrayMove(items, oldIndex, newIndex);
+            });
+          }
+        };
+
         return (
           <div className="flex h-full flex-col p-6">
-            <h3 className="mb-6 text-center text-xl font-semibold leading-tight" dangerouslySetInnerHTML={{ __html: slide.title }} />
+            <h3 className="mb-2 text-center text-xl font-semibold leading-tight" dangerouslySetInnerHTML={{ __html: slide.title }} />
+            <p className="mb-6 text-center text-sm font-medium opacity-70">Drag and drop to rank items</p>
             <div className="flex flex-1 flex-col gap-3 overflow-y-auto pb-4">
-              {listItems.map((item: any, i: number) => (
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={orderedItems.map((i: any) => i.id)} strategy={verticalListSortingStrategy}>
+                  {orderedItems.map((item: any, index: number) => (
+                    <SortableRankingItem key={item.id} id={item.id} color={slide.theme.accentColor}>
+                      <span className="mr-4 flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-bold bg-black/20">
+                        {index + 1}
+                      </span>
+                      <div className="flex-1 text-base font-medium" dangerouslySetInnerHTML={{ __html: item.text || `Item ${index+1}` }} />
+                      <div className="opacity-50">
+                        <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                      </div>
+                    </SortableRankingItem>
+                  ))}
+                </SortableContext>
+              </DndContext>
+            </div>
+            <Button 
+              className="mt-2 w-full shrink-0 h-14 text-lg font-bold rounded-xl" 
+              style={{ backgroundColor: slide.theme.accentColor, color: "#fff" }}
+              onClick={handleSubmit}
+              disabled={isSubmitting || !answer || (Array.isArray(answer) && answer.length === 0)}
+            >
+              {isSubmitting ? <Loader2 className="animate-spin" /> : "Submit"}
+            </Button>
+          </div>
+        );
+      }
+
+      case "100-points": {
+        const pointsListItems = slide.items || slide.options || [];
+        const maxPoints = slide.totalPoints || 100;
+        
+        let allocatedPoints = 0;
+        if (typeof answer === 'object' && answer !== null && !Array.isArray(answer)) {
+          Object.values(answer).forEach((val: any) => {
+            allocatedPoints += Number(val) || 0;
+          });
+        }
+        const remainingPoints = maxPoints - allocatedPoints;
+
+        return (
+          <div className="flex h-full md:max-w-md lg:max-w-xl mx-auto flex-col p-6">
+            <h3 className="mb-2 text-center text-xl font-semibold leading-tight" dangerouslySetInnerHTML={{ __html: slide.title }} />
+            <div className="mb-6 text-center font-medium" style={{ color: remainingPoints === 0 ? '#10b981' : remainingPoints < 0 ? '#ef4444' : slide.theme.textColor }}>
+              {remainingPoints === 0 ? "All points allocated!" : remainingPoints > 0 ? `${remainingPoints} points remaining` : `${Math.abs(remainingPoints)} points over limit`}
+            </div>
+            <div className="flex flex-1 flex-col gap-3 overflow-y-auto pb-4">
+              {pointsListItems.map((item: any, i: number) => (
                 <div key={item.id || i} className="flex items-center p-4 rounded-xl border-2" style={{ borderColor: slide.theme.accentColor + "40", backgroundColor: "rgba(255,255,255,0.05)" }}>
-                  <div className="flex-1 text-base font-medium">{item.text || `Item ${i+1}`}</div>
-                  {slide.type === "100-points" ? (
-                    <input 
-                      type="number" 
-                      className="w-20 h-10 rounded-lg text-center bg-black/20 focus:outline-none focus:ring-2"
-                      style={{ '--tw-ring-color': slide.theme.accentColor } as any}
-                      min="0" max="100"
-                      value={answer?.[item.id] || ''}
-                      onChange={(e) => setAnswer({ ...answer, [item.id]: parseInt(e.target.value) })}
-                    />
-                  ) : (
-                    <input 
-                      type="number" 
-                      className="w-16 h-10 rounded-lg text-center bg-black/20 focus:outline-none focus:ring-2"
-                      style={{ '--tw-ring-color': slide.theme.accentColor } as any}
-                      min="1" max={listItems.length}
-                      value={answer?.[item.id] || ''}
-                      onChange={(e) => setAnswer({ ...answer, [item.id]: parseInt(e.target.value) })}
-                    />
-                  )}
+                  <div className="flex-1 text-base font-medium" dangerouslySetInnerHTML={{ __html: item.text || `Item ${i+1}` }} />
+                  <input 
+                    type="number" 
+                    className="w-20 h-10 rounded-lg text-center bg-black/20 focus:outline-none focus:ring-2"
+                    style={{ '--tw-ring-color': slide.theme.accentColor } as any}
+                    min="0" max="100"
+                    value={answer?.[item.id] ?? ''}
+                    onChange={(e) => setAnswer({ ...answer, [item.id]: e.target.value === '' ? '' : parseInt(e.target.value) })}
+                  />
                 </div>
               ))}
             </div>
@@ -328,6 +515,7 @@ export default function ParticipantPresentation() {
             </Button>
           </div>
         );
+      }
 
       case "number":
         return (
