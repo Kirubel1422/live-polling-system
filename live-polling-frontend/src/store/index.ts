@@ -39,7 +39,7 @@ listenerMiddleware.startListening({
     Object.entries(updates).forEach(([key, value]) => {
       if (coreFields.includes(key)) {
         dataToSend[key] = value;
-      } else {
+      } else if (key !== 'responses') {
         metaUpdates[key] = value;
       }
     });

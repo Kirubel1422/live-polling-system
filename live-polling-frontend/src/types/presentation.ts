@@ -50,6 +50,7 @@ export interface BaseSlide {
   theme: SlideTheme;
   settings: SlideSettings;
   order: number;
+  responses?: any[];
 }
 
 // Interactive Slide Types

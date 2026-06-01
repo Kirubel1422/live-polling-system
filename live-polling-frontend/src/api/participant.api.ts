@@ -19,10 +19,10 @@ export const participantApi = createApi({
         body,
       }),
       transformResponse: (resp: IResponse) => {
-        if (!resp.success || !resp.data) {
-          throw new Error(resp.message || "Failed to join session");
-        }
         return resp.data;
+      },
+      transformErrorResponse: (response: any) => {
+        return { message: response.data?.message || "Failed to join session" };
       },
     }),
     getSessionData: builder.query<any, string>({
@@ -47,6 +47,25 @@ export const participantApi = createApi({
         return resp.data;
       },
     }),
+    upvoteResponse: builder.mutation<any, { participantId: string; responseId: string }>({
+      query: (body) => ({
+        url: "/upvote",
+        method: "POST",
+        body,
+      }),
+      transformResponse: (resp: IResponse) => {
+        if (!resp.success) {
+          throw new Error(resp.message || "Failed to upvote response");
+        }
+        return resp.data;
+      },
+    }),
+    kickParticipant: builder.mutation<{ message: string }, string>({
+      query: (participantId) => ({
+        url: `/${participantId}`,
+        method: 'DELETE',
+      }),
+    }),
   }),
 });
 
@@ -54,6 +73,8 @@ export const {
   useJoinSessionMutation,
   useGetSessionDataQuery,
   useSubmitResponseMutation,
+  useUpvoteResponseMutation,
+  useKickParticipantMutation,
 } = participantApi;
 
 export default participantApi;
