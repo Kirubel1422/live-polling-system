@@ -3,6 +3,7 @@ import { Server } from "http";
 import { AppDataSource } from "src/configs/database";
 import { LiveSessionEntity } from "src/entities/LiveSession.entity";
 import { ParticipantResponseEntity } from "src/entities/ParticipantResponse.entity";
+import { ParticipantEntity } from "src/entities/Participant.entity";
 
 let io: SocketIOServer;
 
@@ -35,11 +36,18 @@ export function initializeSocket(server: Server) {
             where: { sessionId: session.id }
           });
           
-          console.log(`[Socket.io] Sending ${responses.length} existing responses to socket ${socket.id}`);
+          const participantRepo = AppDataSource.getRepository(ParticipantEntity);
+          const participants = await participantRepo.find({
+            where: { sessionId: session.id },
+            order: { joinedAt: "ASC" }
+          });
+          
+          console.log(`[Socket.io] Sending ${responses.length} existing responses and ${participants.length} participants to socket ${socket.id}`);
           socket.emit("existing-responses", responses);
+          socket.emit("existing-participants", participants);
         }
       } catch (err) {
-        console.error("[Socket.io] Failed to fetch existing responses on join", err);
+        console.error("[Socket.io] Failed to fetch existing responses or participants on join", err);
       }
     });
 
@@ -63,6 +71,30 @@ export function initializeSocket(server: Server) {
 
       // Broadcast to participants
       socket.to(`presentation:${data.presentationId}`).emit("slide-changed", data.slideIndex);
+    });
+
+    socket.on("participant-ping", (data: { presentationId: string, participantId: string }) => {
+      // Forward the ping to the presentation room so the presenter can answer
+      socket.to(`presentation:${data.presentationId}`).emit("participant-ping", data);
+    });
+
+    socket.on("participant-alive", (data: { presentationId: string, participantId: string }) => {
+      socket.to(`presentation:${data.presentationId}`).emit("participant-alive", data);
+    });
+
+    socket.on("remove-participant", async (participantId: string) => {
+      try {
+        const participantRepo = AppDataSource.getRepository(ParticipantEntity);
+        await participantRepo.delete({ id: participantId });
+        console.log(`[Socket.io] Automatically removed disconnected participant: ${participantId}`);
+      } catch (err) {
+        console.error("[Socket.io] Failed to remove participant", err);
+      }
+    });
+
+    socket.on("presenter-pong", (data: { presentationId: string, participantId: string }) => {
+      // Forward the pong back to the presentation room so the specific participant receives it
+      socket.to(`presentation:${data.presentationId}`).emit("presenter-pong", data);
     });
 
     socket.on("disconnect", () => {
