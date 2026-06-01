@@ -1,182 +1,415 @@
+import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Activity, Presentation, Users, Zap, BarChart2, Radio } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import {
+  Activity,
+  ArrowRight,
+  BarChart2,
+  CheckCircle2,
+  LockKeyhole,
+  MousePointerClick,
+  Presentation,
+  Radio,
+  Sparkles,
+  Users,
+  Zap,
+} from 'lucide-react';
 
-// Inline SVG illustration for participant card
-function ParticipantIllustration() {
+type FeaturePillProps = {
+  icon: LucideIcon;
+  children: ReactNode;
+  delay?: string;
+};
+
+type RoleCardProps = {
+  to: string;
+  title: string;
+  description: string;
+  button: string;
+  accent: string;
+  icon: LucideIcon;
+  illustration: ReactNode;
+  glowClass: string;
+};
+
+function ParticipantIllustration(): ReactNode {
   return (
-    <svg viewBox="0 0 160 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-24 mb-2 opacity-80">
-      {/* Poll bar chart */}
-      <rect x="18" y="55" width="18" height="32" rx="4" fill="#0598CE" fillOpacity="0.25"/>
-      <rect x="18" y="63" width="18" height="24" rx="4" fill="#0598CE" fillOpacity="0.6"/>
-      <rect x="44" y="40" width="18" height="47" rx="4" fill="#0598CE" fillOpacity="0.25"/>
-      <rect x="44" y="48" width="18" height="39" rx="4" fill="#0598CE" fillOpacity="0.85"/>
-      <rect x="70" y="50" width="18" height="37" rx="4" fill="#0598CE" fillOpacity="0.25"/>
-      <rect x="70" y="58" width="18" height="29" rx="4" fill="#0598CE" fillOpacity="0.5"/>
-      {/* Audience dots */}
-      <circle cx="112" cy="72" r="7" fill="#0598CE" fillOpacity="0.3"/>
-      <circle cx="130" cy="68" r="7" fill="#0598CE" fillOpacity="0.5"/>
-      <circle cx="148" cy="72" r="7" fill="#0598CE" fillOpacity="0.3"/>
-      <circle cx="112" cy="72" r="4" fill="#0598CE" fillOpacity="0.7"/>
-      <circle cx="130" cy="68" r="4" fill="#0598CE"/>
-      <circle cx="148" cy="72" r="4" fill="#0598CE" fillOpacity="0.7"/>
-      {/* Signal waves */}
-      <path d="M121 52 Q130 44 139 52" stroke="#0598CE" strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.5"/>
-      <path d="M116 46 Q130 36 144 46" stroke="#0598CE" strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.3"/>
-      {/* Baseline */}
-      <line x1="12" y1="87" x2="155" y2="87" stroke="#0598CE" strokeWidth="1.5" strokeLinecap="round" opacity="0.2"/>
-    </svg>
-  );
-}
+    <svg
+      viewBox="0 0 220 130"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-28 w-full opacity-95"
+      aria-hidden="true"
+    >
+      <defs>
+        <linearGradient id="participantGradient" x1="20" y1="20" x2="180" y2="115">
+          <stop stopColor="#0598CE" stopOpacity="0.95" />
+          <stop offset="1" stopColor="#33C3FF" stopOpacity="0.75" />
+        </linearGradient>
+      </defs>
 
-// Inline SVG illustration for presenter card
-function PresenterIllustration() {
-  return (
-    <svg viewBox="0 0 160 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-24 mb-2 opacity-80">
-      {/* Screen */}
-      <rect x="20" y="15" width="100" height="62" rx="8" fill="#33C3FF" fillOpacity="0.08" stroke="#33C3FF" strokeWidth="1.5" strokeOpacity="0.3"/>
-      {/* Chart inside screen */}
-      <rect x="32" y="52" width="10" height="18" rx="2" fill="#33C3FF" fillOpacity="0.5"/>
-      <rect x="47" y="40" width="10" height="30" rx="2" fill="#33C3FF" fillOpacity="0.8"/>
-      <rect x="62" y="46" width="10" height="24" rx="2" fill="#33C3FF" fillOpacity="0.5"/>
-      <rect x="77" y="35" width="10" height="35" rx="2" fill="#33C3FF"/>
-      {/* Presenter podium */}
-      <rect x="130" y="55" width="24" height="22" rx="4" fill="#33C3FF" fillOpacity="0.15" stroke="#33C3FF" strokeWidth="1" strokeOpacity="0.3"/>
-      {/* Presenter head */}
-      <circle cx="142" cy="44" r="9" fill="#33C3FF" fillOpacity="0.2" stroke="#33C3FF" strokeWidth="1.5" strokeOpacity="0.5"/>
-      <circle cx="142" cy="44" r="5" fill="#33C3FF" fillOpacity="0.6"/>
-      {/* Laser pointer line */}
-      <line x1="128" y1="58" x2="90" y2="48" stroke="#33C3FF" strokeWidth="1" strokeDasharray="3 2" opacity="0.5"/>
-      <circle cx="90" cy="48" r="2.5" fill="#33C3FF" opacity="0.8"/>
-      {/* Stand */}
-      <rect x="65" y="77" width="10" height="6" rx="1" fill="#33C3FF" fillOpacity="0.2"/>
-      <rect x="55" y="83" width="30" height="3" rx="1.5" fill="#33C3FF" fillOpacity="0.2"/>
-    </svg>
-  );
-}
-
-export default function StartPage() {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50 dark:from-slate-900 dark:via-[#0a1628] dark:to-slate-900 flex items-center justify-center p-4 transition-colors overflow-hidden relative">
-
-      {/* Background orbs */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#0598CE]/30 dark:bg-[#0598CE]/10 rounded-full blur-3xl pointer-events-none animate-pulse" style={{animationDuration:'6s'}} />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#33C3FF]/30 dark:bg-[#33C3FF]/8 rounded-full blur-3xl pointer-events-none animate-pulse" style={{animationDuration:'8s', animationDelay:'2s'}} />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-[#0598CE]/10 rounded-full blur-2xl pointer-events-none" />
-
-      {/* Decorative grid */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.03] dark:opacity-[0.06]"
-        style={{
-          backgroundImage: 'linear-gradient(#0598CE 1px, transparent 1px), linear-gradient(90deg, #0598CE 1px, transparent 1px)',
-          backgroundSize: '48px 48px'
-        }}
+      <rect x="22" y="18" width="176" height="94" rx="22" fill="#0598CE" fillOpacity="0.06" />
+      <rect
+        x="22.75"
+        y="18.75"
+        width="174.5"
+        height="92.5"
+        rx="21.25"
+        stroke="#0598CE"
+        strokeOpacity="0.18"
+        strokeWidth="1.5"
       />
 
-      {/* Floating stat badges */}
-      <div className="absolute top-16 left-10 hidden lg:flex items-center gap-2 bg-white/70 dark:bg-slate-800/70 backdrop-blur-md border border-[#0598CE]/20 rounded-2xl px-4 py-2 shadow-lg animate-bounce" style={{animationDuration:'4s'}}>
-        <Radio className="size-4 text-[#0598CE]" />
-        <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">Live Now</span>
-        <span className="size-2 rounded-full bg-[#0598CE] animate-ping inline-block" />
-      </div>
-      <div className="absolute bottom-20 left-8 hidden lg:flex items-center gap-2 bg-white/70 dark:bg-slate-800/70 backdrop-blur-md border border-[#33C3FF]/20 rounded-2xl px-4 py-2 shadow-lg" style={{animation:'float 5s ease-in-out infinite', animationDelay:'1s'}}>
-        <BarChart2 className="size-4 text-[#33C3FF]" />
-        <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">Real-time Results</span>
-      </div>
-      <div className="absolute top-24 right-10 hidden lg:flex items-center gap-2 bg-white/70 dark:bg-slate-800/70 backdrop-blur-md border border-[#0598CE]/20 rounded-2xl px-4 py-2 shadow-lg" style={{animation:'float 6s ease-in-out infinite', animationDelay:'0.5s'}}>
-        <Zap className="size-4 text-[#0598CE]" />
-        <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">Instant Polls</span>
-      </div>
+      <rect x="45" y="68" width="18" height="26" rx="6" fill="url(#participantGradient)" fillOpacity="0.55" />
+      <rect x="73" y="51" width="18" height="43" rx="6" fill="url(#participantGradient)" />
+      <rect x="101" y="61" width="18" height="33" rx="6" fill="url(#participantGradient)" fillOpacity="0.68" />
 
-      <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-8px); }
-        }
-        @keyframes fadein {
-          from { opacity: 0; transform: translateY(24px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .fadein { animation: fadein 0.7s cubic-bezier(.22,1,.36,1) both; }
-        .fadein-2 { animation: fadein 0.7s cubic-bezier(.22,1,.36,1) 0.15s both; }
-        .fadein-3 { animation: fadein 0.7s cubic-bezier(.22,1,.36,1) 0.3s both; }
-        .card-glow-blue:hover { box-shadow: 0 8px 48px 0 #0598CE33, 0 2px 16px 0 #0598CE18; }
-        .card-glow-cyan:hover { box-shadow: 0 8px 48px 0 #33C3FF33, 0 2px 16px 0 #33C3FF18; }
-      `}</style>
+      <circle cx="151" cy="73" r="10" fill="#0598CE" fillOpacity="0.18" />
+      <circle cx="174" cy="70" r="10" fill="#0598CE" fillOpacity="0.28" />
+      <circle cx="162" cy="48" r="10" fill="#33C3FF" fillOpacity="0.28" />
 
-      <div className="w-full max-w-2xl relative z-10 text-center">
+      <circle cx="151" cy="73" r="5" fill="#0598CE" />
+      <circle cx="174" cy="70" r="5" fill="#33C3FF" />
+      <circle cx="162" cy="48" r="5" fill="#0598CE" />
 
-        {/* Logo badge */}
-        <div className="fadein flex flex-col items-center mb-6">
-          <div className="inline-flex items-center gap-3 bg-white dark:bg-slate-800/90 backdrop-blur rounded-2xl shadow-lg border border-[#0598CE]/20 px-5 py-3 mb-5">
-            <div className="p-1.5 bg-gradient-to-br from-[#0598CE] to-[#33C3FF] rounded-xl">
-              <Activity className="size-5 text-white" />
-            </div>
-            <span className="text-sm font-semibold tracking-wide text-slate-500 dark:text-slate-400 uppercase">Live Polling System</span>
+      <path
+        d="M146 35C154 28 170 28 178 35"
+        stroke="#33C3FF"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        opacity="0.55"
+      />
+      <path
+        d="M138 25C151 14 174 14 187 25"
+        stroke="#33C3FF"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        opacity="0.28"
+      />
+
+      <line
+        x1="42"
+        y1="94"
+        x2="125"
+        y2="94"
+        stroke="#0598CE"
+        strokeOpacity="0.25"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function PresenterIllustration(): ReactNode {
+  return (
+    <svg
+      viewBox="0 0 220 130"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-28 w-full opacity-95"
+      aria-hidden="true"
+    >
+      <defs>
+        <linearGradient id="presenterGradient" x1="35" y1="18" x2="165" y2="110">
+          <stop stopColor="#33C3FF" stopOpacity="0.95" />
+          <stop offset="1" stopColor="#0598CE" stopOpacity="0.75" />
+        </linearGradient>
+      </defs>
+
+      <rect x="28" y="20" width="132" height="78" rx="18" fill="#33C3FF" fillOpacity="0.06" />
+      <rect
+        x="28.75"
+        y="20.75"
+        width="130.5"
+        height="76.5"
+        rx="17.25"
+        stroke="#33C3FF"
+        strokeOpacity="0.2"
+        strokeWidth="1.5"
+      />
+
+      <rect x="49" y="65" width="13" height="20" rx="4" fill="url(#presenterGradient)" fillOpacity="0.48" />
+      <rect x="70" y="49" width="13" height="36" rx="4" fill="url(#presenterGradient)" fillOpacity="0.75" />
+      <rect x="91" y="57" width="13" height="28" rx="4" fill="url(#presenterGradient)" fillOpacity="0.58" />
+      <rect x="112" y="40" width="13" height="45" rx="4" fill="url(#presenterGradient)" />
+
+      <circle
+        cx="180"
+        cy="49"
+        r="12"
+        fill="#33C3FF"
+        fillOpacity="0.2"
+        stroke="#33C3FF"
+        strokeOpacity="0.38"
+        strokeWidth="1.5"
+      />
+      <circle cx="180" cy="49" r="6" fill="#33C3FF" />
+
+      <rect
+        x="166"
+        y="68"
+        width="28"
+        height="28"
+        rx="8"
+        fill="#33C3FF"
+        fillOpacity="0.12"
+        stroke="#33C3FF"
+        strokeOpacity="0.26"
+      />
+      <path
+        d="M166 70L127 58"
+        stroke="#33C3FF"
+        strokeWidth="1.8"
+        strokeDasharray="4 4"
+        strokeLinecap="round"
+        opacity="0.6"
+      />
+      <circle cx="127" cy="58" r="3.5" fill="#33C3FF" />
+
+      <rect x="87" y="99" width="16" height="7" rx="2" fill="#33C3FF" fillOpacity="0.25" />
+      <rect x="72" y="108" width="46" height="5" rx="2.5" fill="#33C3FF" fillOpacity="0.25" />
+    </svg>
+  );
+}
+
+function FeaturePill({ icon: Icon, children, delay = '0s' }: FeaturePillProps): ReactNode {
+  return (
+    <div
+      className="hidden items-center gap-2 rounded-2xl border border-white/50 bg-white/70 px-4 py-2.5 text-xs font-semibold text-slate-600 shadow-xl shadow-slate-900/5 backdrop-blur-xl lg:flex dark:border-white/10 dark:bg-slate-900/55 dark:text-slate-300 animate-[float_6s_ease-in-out_infinite]"
+      style={{ animationDelay: delay }}
+    >
+      <Icon className="size-4 text-[#0598CE]" />
+      <span>{children}</span>
+    </div>
+  );
+}
+
+function RoleCard({
+  to,
+  title,
+  description,
+  button,
+  accent,
+  icon: Icon,
+  illustration,
+  glowClass,
+}: RoleCardProps): ReactNode {
+  return (
+    <Link to={to} className="group block h-full outline-none">
+      <div
+        className={`relative flex h-full min-h-[365px] flex-col overflow-hidden rounded-[2rem] border border-white/70 bg-white/75 p-6 text-left shadow-2xl shadow-slate-900/8 backdrop-blur-2xl transition-all duration-500 hover:-translate-y-2 dark:border-white/10 dark:bg-white/[0.055] ${glowClass}`}
+      >
+        <div
+          className="absolute inset-x-0 top-0 h-1 opacity-80 transition-opacity duration-300 group-hover:opacity-100"
+          style={{
+            background: `linear-gradient(90deg, ${accent}, #33C3FF)`,
+          }}
+        />
+
+        <div
+          className="absolute -right-16 -top-16 size-40 rounded-full opacity-0 blur-3xl transition-opacity duration-500 group-hover:opacity-30"
+          style={{ backgroundColor: accent }}
+        />
+
+        <div className="absolute bottom-0 left-0 h-28 w-full bg-gradient-to-t from-slate-50/80 to-transparent dark:from-slate-950/30" />
+
+        <div className="relative">
+          <div className="mb-3 rounded-3xl border border-slate-200/70 bg-slate-50/70 p-3 dark:border-white/10 dark:bg-slate-950/25">
+            {illustration}
           </div>
 
-          <h1 className="text-5xl font-extrabold tracking-tight leading-tight bg-gradient-to-br from-slate-800 via-[#0598CE] to-[#33C3FF] dark:from-white dark:via-[#7dd8f8] dark:to-[#33C3FF] bg-clip-text text-transparent pb-1">
-            Engage Your<br/>Audience, Live.
-          </h1>
-          <p className="mt-4 text-slate-500 dark:text-slate-400 text-base max-w-sm mx-auto leading-relaxed">
-            Real-time polls, instant feedback, and seamless interaction — all in one place.
+          <div className="mb-5 flex items-center justify-between gap-4">
+            <div
+              className="flex size-[60px] items-center justify-center rounded-3xl border shadow-lg transition-transform duration-300 group-hover:scale-110"
+              style={{
+                background: `linear-gradient(135deg, ${accent}22, ${accent}08)`,
+                borderColor: `${accent}33`,
+                boxShadow: `0 18px 45px ${accent}18`,
+              }}
+            >
+              <Icon className="size-8" style={{ color: accent }} />
+            </div>
+
+            <div
+              className="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em]"
+              style={{
+                borderColor: `${accent}2f`,
+                color: accent,
+                backgroundColor: `${accent}0f`,
+              }}
+            >
+              <Sparkles className="size-3.5" />
+              Live
+            </div>
+          </div>
+
+          <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">{title}</h2>
+
+          <p className="mt-2 min-h-[44px] text-sm leading-6 text-slate-500 dark:text-slate-400">
+            {description}
           </p>
+
+          <div className="mt-5 flex flex-wrap gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-500 dark:bg-white/8 dark:text-slate-400">
+              <CheckCircle2 className="size-3.5" style={{ color: accent }} />
+              Fast access
+            </span>
+
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-500 dark:bg-white/8 dark:text-slate-400">
+              <LockKeyhole className="size-3.5" style={{ color: accent }} />
+              Secure
+            </span>
+          </div>
         </div>
 
-        {/* Cards */}
-        <div className="fadein-2 grid md:grid-cols-2 gap-5 mt-8">
+        <div className="relative mt-auto pt-6">
+          <div
+            className="flex w-full items-center justify-between rounded-2xl border px-4 py-3.5 text-sm font-bold transition-all duration-300 group-hover:translate-x-0.5"
+            style={{
+              color: accent,
+              borderColor: `${accent}38`,
+              background: `linear-gradient(135deg, ${accent}14, ${accent}08)`,
+            }}
+          >
+            <span>{button}</span>
+            <span
+              className="flex size-8 items-center justify-center rounded-xl text-white transition-transform duration-300 group-hover:translate-x-1"
+              style={{
+                background: `linear-gradient(135deg, ${accent}, #33C3FF)`,
+              }}
+            >
+              <ArrowRight className="size-4" />
+            </span>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
 
-          {/* Participant Card */}
-          <Link to="/start/participant" className="group">
-            <div className="card-glow-blue relative bg-white/80 dark:bg-white/[0.05] backdrop-blur-xl border border-slate-200/80 dark:border-white/10 p-7 rounded-3xl shadow-lg hover:border-[#0598CE]/50 transition-all duration-300 cursor-pointer h-full flex flex-col items-center justify-start overflow-hidden">
-              {/* Card top accent */}
-              <div className="absolute top-0 left-0 right-0 h-1 rounded-t-3xl bg-gradient-to-r from-[#0598CE] to-[#33C3FF] opacity-70 group-hover:opacity-100 transition-opacity" />
-              
-              <ParticipantIllustration />
+export default function StartPage(): ReactNode {
+  return (
+    <div className="relative isolate flex min-h-screen items-center justify-center overflow-hidden bg-slate-50 px-4 py-10 text-slate-900 transition-colors dark:bg-[#07111f] dark:text-white">
 
-              <div className="p-3.5 bg-gradient-to-br from-[#0598CE]/15 to-[#0598CE]/5 rounded-2xl mb-4 group-hover:scale-110 transition-transform duration-300 border border-[#0598CE]/20">
-                <Users className="size-8 text-[#0598CE]" />
-              </div>
+      <div className="absolute inset-0 -z-20 bg-[radial-gradient(circle_at_top_left,rgba(5,152,206,.22),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(51,195,255,.22),transparent_34%)] dark:bg-[radial-gradient(circle_at_top_left,rgba(5,152,206,.18),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(51,195,255,.12),transparent_34%)]" />
+      <div className="premium-grid absolute inset-0 -z-10 opacity-80" />
 
-              <h2 className="text-xl font-bold mb-1.5 text-slate-800 dark:text-white">Participant</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-5">
-                Join a live session and respond to polls in real time.
-              </p>
+      <div className="absolute left-1/2 top-1/2 -z-10 size-[620px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#0598CE]/10 blur-3xl dark:bg-[#0598CE]/8" />
+      <div className="absolute left-[18%] top-[18%] -z-10 size-72 rounded-full bg-[#0598CE]/20 blur-3xl dark:bg-[#0598CE]/10" />
+      <div className="absolute bottom-[14%] right-[12%] -z-10 size-80 rounded-full bg-[#33C3FF]/25 blur-3xl dark:bg-[#33C3FF]/10" />
 
-              <button className="w-full mt-auto py-2.5 rounded-xl bg-gradient-to-r from-[#0598CE]/10 to-[#33C3FF]/10 border border-[#0598CE]/25 text-[#0598CE] font-semibold text-sm group-hover:from-[#0598CE]/20 group-hover:to-[#33C3FF]/20 group-hover:border-[#0598CE]/50 transition-all duration-300 flex items-center justify-center gap-2">
-                Join Session
-                <span className="group-hover:translate-x-1 transition-transform duration-200">→</span>
-              </button>
+      <div className="absolute left-10 top-16">
+        <FeaturePill icon={Radio}>Live Now</FeaturePill>
+      </div>
+
+      <div className="absolute right-10 top-24">
+        <FeaturePill icon={Zap} delay=".6s">
+          Instant Polls
+        </FeaturePill>
+      </div>
+
+      <div className="absolute bottom-20 left-8">
+        <FeaturePill icon={BarChart2} delay="1.1s">
+          Real-time Results
+        </FeaturePill>
+      </div>
+
+      <div className="w-full max-w-5xl">
+        <div className="fade-up mx-auto max-w-3xl text-center">
+          <div className="mx-auto mb-6 inline-flex items-center gap-3 rounded-2xl border border-[#0598CE]/20 bg-white/75 px-4 py-2.5 shadow-xl shadow-slate-900/5 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.06]">
+            <div className="relative flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#0598CE] to-[#33C3FF] shadow-lg shadow-[#0598CE]/25">
+              <Activity className="size-5 text-white" />
+              <span className="absolute -right-1 -top-1 size-3 rounded-full bg-[#33C3FF] ring-4 ring-white dark:ring-[#07111f]" />
             </div>
-          </Link>
 
-          {/* Presenter Card */}
-          <Link to="/login" className="group">
-            <div className="card-glow-cyan relative bg-white/80 dark:bg-white/[0.05] backdrop-blur-xl border border-slate-200/80 dark:border-white/10 p-7 rounded-3xl shadow-lg hover:border-[#33C3FF]/50 transition-all duration-300 cursor-pointer h-full flex flex-col items-center justify-start overflow-hidden">
-              {/* Card top accent */}
-              <div className="absolute top-0 left-0 right-0 h-1 rounded-t-3xl bg-gradient-to-r from-[#33C3FF] to-[#0598CE] opacity-70 group-hover:opacity-100 transition-opacity" />
-
-              <PresenterIllustration />
-
-              <div className="p-3.5 bg-gradient-to-br from-[#33C3FF]/15 to-[#33C3FF]/5 rounded-2xl mb-4 group-hover:scale-110 transition-transform duration-300 border border-[#33C3FF]/20">
-                <Presentation className="size-8 text-[#33C3FF]" />
-              </div>
-
-              <h2 className="text-xl font-bold mb-1.5 text-slate-800 dark:text-white">Presenter</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-5">
-                Create, manage, and host live interactive presentations.
+            <div className="text-left">
+              <p className="text-[11px] font-black uppercase tracking-[0.26em] text-[#0598CE]">
+                Live Polling System
               </p>
-
-              <button className="w-full mt-auto py-2.5 rounded-xl bg-gradient-to-r from-[#33C3FF]/10 to-[#0598CE]/10 border border-[#33C3FF]/25 text-[#33C3FF] font-semibold text-sm group-hover:from-[#33C3FF]/20 group-hover:to-[#0598CE]/20 group-hover:border-[#33C3FF]/50 transition-all duration-300 flex items-center justify-center gap-2">
-                Log In
-                <span className="group-hover:translate-x-1 transition-transform duration-200">→</span>
-              </button>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                Interactive sessions made simple
+              </p>
             </div>
-          </Link>
+          </div>
+
+          <h1 className="text-5xl font-black leading-[0.95] tracking-[-0.055em] sm:text-6xl md:text-7xl">
+            <span className="block text-slate-950 dark:text-white">Engage Your</span>
+            <span className="block bg-gradient-to-r from-[#0598CE] via-[#33C3FF] to-[#0598CE] bg-clip-text text-transparent">
+              Audience, Live.
+            </span>
+          </h1>
+
+          <p className="mx-auto mt-5 max-w-xl text-base leading-8 text-slate-500 dark:text-slate-400 sm:text-lg">
+            Run beautiful live sessions with instant answers, real-time feedback,
+            and a clean experience for both presenters and participants.
+          </p>
+
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs font-semibold text-slate-500 dark:text-slate-400">
+            <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/65 px-3 py-2 backdrop-blur dark:border-white/10 dark:bg-white/[0.055]">
+              <MousePointerClick className="size-4 text-[#0598CE]" />
+              No friction
+            </span>
+
+            <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/65 px-3 py-2 backdrop-blur dark:border-white/10 dark:bg-white/[0.055]">
+              <Radio className="size-4 text-[#33C3FF]" />
+              Real-time sync
+            </span>
+
+            <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/65 px-3 py-2 backdrop-blur dark:border-white/10 dark:bg-white/[0.055]">
+              <LockKeyhole className="size-4 text-[#0598CE]" />
+              Secure access
+            </span>
+          </div>
         </div>
 
-        {/* Footer note */}
-        <p className="fadein-3 mt-7 text-xs text-slate-400 dark:text-slate-600">
-          Powered by real-time technology · Secure · No account needed to participate
-        </p>
+        <div
+          className="fade-up relative mt-10 rounded-[2.5rem] border border-white/70 bg-white/45 p-3 shadow-2xl shadow-slate-900/10 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.035]"
+          style={{ animationDelay: '.14s' }}
+        >
+          <div className="absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-[#33C3FF]/70 to-transparent" />
+
+          <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[2.5rem]">
+            <div
+              className="absolute top-0 h-full w-1/2 bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-40 animate-[shimmer_7s_ease-in-out_infinite]"
+            />
+          </div>
+
+          <div className="relative grid gap-4 md:grid-cols-2">
+            <RoleCard
+              to="/start/participant"
+              title="Participant"
+              description="Join a live session and respond to polls instantly from any device."
+              button="Join Session"
+              accent="#0598CE"
+              icon={Users}
+              illustration={<ParticipantIllustration />}
+              glowClass="participant-glow"
+            />
+
+            <RoleCard
+              to="/login"
+              title="Presenter"
+              description="Create, manage, and host interactive presentations with real-time insights."
+              button="Log In"
+              accent="#33C3FF"
+              icon={Presentation}
+              illustration={<PresenterIllustration />}
+              glowClass="presenter-glow"
+            />
+          </div>
+        </div>
+
+        <div
+          className="fade-up mt-7 flex flex-col items-center justify-center gap-3 text-center text-xs text-slate-400 sm:flex-row dark:text-slate-500"
+          style={{ animationDelay: '.25s' }}
+        >
+          <span>Powered by real-time technology</span>
+          <span className="hidden size-1 rounded-full bg-slate-300 sm:block dark:bg-slate-700" />
+          <span>Secure</span>
+          <span className="hidden size-1 rounded-full bg-slate-300 sm:block dark:bg-slate-700" />
+          <span>No account needed to participate</span>
+        </div>
       </div>
     </div>
   );
