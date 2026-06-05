@@ -147,7 +147,7 @@ export function usePreviewHandlers() {
       setParticipants((prev) => {
         const active = prev.filter((p) => {
           const lastSeen = participantLastSeen.current[p.id];
-          if (lastSeen && now - lastSeen > 65000) {
+          if (lastSeen && now - lastSeen > 8000) {
             console.log(`[Socket.io] Removing stale participant ${p.id} due to inactivity`);
             newSocket.emit("remove-participant", p.id);
             toast.info(`${p.name} disconnected`);
@@ -157,7 +157,7 @@ export function usePreviewHandlers() {
         });
         return active;
       });
-    }, 30000);
+    }, 3000);
 
     newSocket.on("existing-responses", (responses: any[]) => {
       console.log("[Socket.io] Received existing responses in usePreviewHandlers:", responses);

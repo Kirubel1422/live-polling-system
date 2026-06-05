@@ -133,19 +133,10 @@ export function useParticipantPresentation() {
         }
         socket.emit("participant-ping", { presentationId, participantId: storedId });
       }
-    }, 5000);
-
-    // Participant alive ping interval
-    const aliveInterval = setInterval(() => {
-      const storedId = localStorage.getItem(`participant_${presentationId}`);
-      if (storedId) {
-        socket.emit("participant-alive", { presentationId, participantId: storedId });
-      }
-    }, 30000);
+    }, 2000);
 
     return () => {
       clearInterval(beaconInterval);
-      clearInterval(aliveInterval);
       socket.disconnect();
     };
   }, [presentationId]);
