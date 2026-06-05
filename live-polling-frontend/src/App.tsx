@@ -1,17 +1,19 @@
+import { Toaster } from './components/ui'
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { Toaster } from '@/components/ui/sonner'
-import Dashboard from '@/pages/Dashboard'
-import Editor from '@/pages/Editor'
-import Preview from '@/pages/Preview'
-import AccountSettings from '@/pages/AccountSettings'
-import Login from '@/pages/Login'
-import Register from '@/pages/Register'
-import ForgotPassword from '@/pages/ForgotPassword'
-import ResetPassword from '@/pages/ResetPassword'
-import VerifyEmail from '@/pages/VerifyEmail'
-import StartPage from '@/pages/StartPage'
-import JoinPage from '@/pages/JoinPage'
-import ParticipantPresentation from '@/pages/ParticipantPresentation'
+import { 
+  Dashboard,
+  Editor,
+  Preview,
+  AccountSettings,
+  Login,
+  Register,
+  ForgotPassword,
+  ResetPassword,
+  VerifyEmail,
+  StartPage,
+  JoinPage,
+  ParticipantPresentation
+} from '@/pages'
 import { AuthGuard, GuestGuard } from '@/components/auth/AuthGuard'
 
 function App() {

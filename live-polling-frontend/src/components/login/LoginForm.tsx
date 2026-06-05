@@ -1,13 +1,5 @@
-import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { Button, Input } from "@/components/ui";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { ENV } from "@/config/env";
 import { LoginSchema, type LoginDto } from "@/validators/auth.validator";
 import { yupResolver } from "@hookform/resolvers/yup";

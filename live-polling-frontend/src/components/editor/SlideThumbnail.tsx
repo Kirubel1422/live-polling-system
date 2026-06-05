@@ -1,17 +1,10 @@
+import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui";
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Copy, MoreHorizontal, Trash2 } from 'lucide-react';
 import { useAppDispatch } from '@/store/hooks';
 import { deleteSlide, duplicateSlide } from '@/store/presentationsSlice';
 import { useDeleteSlideMutation, useDuplicateSlideMutation } from '@/api/slides.api';
-import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { type SlideThumbnailProps } from './types';
 import { renderSlideContent } from './SlideCanvas';

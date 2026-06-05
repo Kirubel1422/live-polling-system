@@ -4,12 +4,11 @@ import {
   setAIGenerationProgress,
   setAIGenerationStatus,
 } from '@/store/editorSlice';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
 
 import type { AIGenerationModalProps } from './types';
 import { useTypingPlaceholder, useAIModalState } from './hooks';
 import { LeftPanel, RightPanel } from './components';
+import { Dialog, DialogContent, Separator } from '../ui';
 
 export default function AIGenerationModal({
   open,

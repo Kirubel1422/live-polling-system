@@ -1,7 +1,7 @@
+import { Button, Input } from "@/components/ui";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   Activity,
   Mail,
@@ -15,14 +15,6 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { ForgotPasswordSchema, type ForgotPasswordDto } from '@/validators/auth.validator';
 import { useForgotPasswordMutation } from '@/api/auth.api';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
 
 export default function ForgotPassword() {
   const [isSent, setIsSent] = useState(false);

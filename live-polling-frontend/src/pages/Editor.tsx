@@ -12,14 +12,6 @@ import {
 import Lottie from 'lottie-react';
 
 import { useAppDispatch } from '@/store/hooks';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { Textarea } from '@/components/ui/textarea';
 import modifying from '../assets/modifying.json';
 import {
   SlideList,
@@ -28,16 +20,8 @@ import {
   AddSlideMenu,
 } from '@/components/editor/components';
 import AIGenerationModal from '@/components/ai-generation-modal/AIGenerationModal';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
 import { useEditorState } from '@/components/editor/hooks';
-import { Badge } from '@/components/ui/badge';
+import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Input, Tooltip, TooltipContent, TooltipTrigger, Badge, Textarea } from '@/components/ui';
 
 function EditorToolbar({
   title,

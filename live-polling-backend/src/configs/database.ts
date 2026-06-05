@@ -33,7 +33,7 @@ export const AppDataSource = new DataSource({
     TemplateEntity,
     AiGenerationJobEntity,
   ],
-  migrations: ["dist/migrations/*.js"],
+  migrations: [__dirname + "/../migrations/*.{ts,js}"],
 });
 
 export const connectDatabase = async () => {

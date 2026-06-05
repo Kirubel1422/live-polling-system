@@ -1,11 +1,11 @@
 import React from 'react';
-import { Button } from '@/components/ui/button';
 import { getContrastColor } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Loader2, ThumbsUp, WifiOff } from 'lucide-react';
 import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { Button } from '../ui';
 
 export interface SlideComponentProps {
   slide: any;

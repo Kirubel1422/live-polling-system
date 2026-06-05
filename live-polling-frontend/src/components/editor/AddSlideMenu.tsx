@@ -1,17 +1,8 @@
+import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuGroup } from "@/components/ui";
 import { Plus } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { addSlide } from '@/store/presentationsSlice';
 import { setSelectedSlide } from '@/store/editorSlice';
-import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  DropdownMenuGroup,
-} from '@/components/ui/dropdown-menu';
 import { type SlideType, type Slide } from '@/types/presentation';
 import { type AddSlideMenuProps } from './types';
 import { SLIDE_TEMPLATES } from './data.const';

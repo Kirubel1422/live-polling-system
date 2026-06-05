@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
@@ -16,7 +17,6 @@ import {
   Zap,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Button } from "@/components/ui/button";
 
 type FloatingBadgeProps = {
   icon: LucideIcon;

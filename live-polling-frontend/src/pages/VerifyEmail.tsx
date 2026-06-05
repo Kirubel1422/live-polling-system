@@ -1,45 +1,12 @@
-import { useEffect, useState, useRef } from 'react';
-import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Activity, CheckCircle2, XCircle } from 'lucide-react';
-import { useVerifyEmailMutation } from '@/api/auth.api';
+import { useVerifyEmailHandler } from '@/components/verify-email';
+import { Button } from '@/components/ui';
 
 export default function VerifyEmail() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
-  const navigate = useNavigate();
-  
-  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
-  const [message, setMessage] = useState('Verifying your email address...');
-  const hasAttempted = useRef(false);
-
-  const [verifyEmail] = useVerifyEmailMutation();
-
-  useEffect(() => {
-    if (!token) {
-      setStatus('error');
-      setMessage('Invalid verification link.');
-      return;
-    }
-
-    if (hasAttempted.current) return;
-    hasAttempted.current = true;
-
-    const verify = async () => {
-      try {
-        const response = await verifyEmail(token).unwrap();
-        
-        setStatus('success');
-        setMessage(response.message || 'Your email has been verified!');
-        setTimeout(() => navigate('/dashboard'), 3000);
-      } catch (err: any) {
-        setStatus('error');
-        setMessage(err?.data?.message || err?.message || 'Verification failed. The link might be expired.');
-      }
-    };
-
-    verify();
-  }, [token, navigate]);
+  const { status, message } = useVerifyEmailHandler(token);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50 dark:from-slate-900 dark:via-[#0a1628] dark:to-slate-900 flex items-center justify-center p-4 transition-colors">

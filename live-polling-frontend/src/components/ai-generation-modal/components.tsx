@@ -1,14 +1,12 @@
 import Lottie from 'lottie-react';
 import generating from '../../assets/robot.json';
 import idle from '../../assets/idle.json';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import { MoveUp, Sparkles } from 'lucide-react';
 import { useLoadingFact } from './hooks';
 import { SUGGESTION_CHIPS } from './data.const';
 import type { ChatMessage, SuggestionChip } from './types';
 import { cn } from '@/lib';
+import { Button, Label, Textarea } from '../ui';
 
 export function ChatBubble({ msg }: { msg: ChatMessage }) {
   if (msg.role === 'user') {
