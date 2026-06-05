@@ -105,7 +105,7 @@ export default function Login(): ReactNode {
                   </div>
                 </div>
 
-                <h1 className="max-w-lg text-5xl font-black leading-[0.96] tracking-[-0.055em]">
+                <h1 className="max-w-lg bg-gradient-to-r from-slate-950 to-primary bg-clip-text text-5xl font-black leading-[0.96] tracking-[-0.055em] text-transparent dark:from-white dark:to-[#33C3FF]">
                   Sign in and start engaging your audience.
                 </h1>
 
