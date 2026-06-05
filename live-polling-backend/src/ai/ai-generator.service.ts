@@ -2,12 +2,16 @@ import fs from "fs";
 import path from "path";
 import { ENV } from "src/constants/dotenv";
 import logger from "src/utils/logger/logger";
+import { AIJsonValidatorService } from "./ai-json-validator.service";
 
 const SYSTEM_PROMPT_PATH = path.join(__dirname, "prompts", "system-prompt.txt");
+const CONTEXT_BUILDER_PROMPT_PATH = path.join(__dirname, "prompts", "context-builder-system-prompt.txt");
 
 export class AIGeneratorService {
   private systemPrompt: string;
   private enhancementPrompt: string;
+  private contextBuilderPrompt: string;
+  private jsonValidator: AIJsonValidatorService;
 
   constructor() {
     try {
@@ -24,9 +28,21 @@ export class AIGeneratorService {
       logger.error("Failed to read enhancement prompt file", error);
       this.enhancementPrompt = "You are a presentation modifier. Given a presentation JSON and a request, return the modified JSON.";
     }
+
+    try {
+      this.contextBuilderPrompt = fs.readFileSync(CONTEXT_BUILDER_PROMPT_PATH, "utf-8");
+    } catch (error) {
+      logger.error("Failed to read context builder prompt file", error);
+      this.contextBuilderPrompt = "You are a helpful interview assistant that gathers context before generating a presentation. Respond in JSON with {ready, question, enrichedPrompt}.";
+    }
+
+    this.jsonValidator = new AIJsonValidatorService();
   }
 
-  private async *streamOpenRouter(messages: { role: string; content: string }[]): AsyncGenerator<any, void, unknown> {
+  private async *streamOpenRouter(
+    messages: { role: string; content: string }[],
+    schemaType: "presentation" | "enhancement"
+  ): AsyncGenerator<any, void, unknown> {
     const apiKey = ENV.AI_API_KEY;
     if (!apiKey) {
       throw new Error("AI_API_KEY is not configured.");
@@ -106,21 +122,24 @@ export class AIGeneratorService {
     }
 
     const parsed = JSON.parse(jsonString);
-    yield { type: "result", data: parsed };
+
+    // Validate and auto-correct the parsed JSON
+    const validated = await this.jsonValidator.validateAndCorrect(parsed, schemaType);
+    yield { type: "result", data: validated };
   }
 
   async *generatePresentationStream(userPrompt: string): AsyncGenerator<any, void, unknown> {
     const maxRetries = 2;
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        logger.info(`Starting AI generation with prompt (Attempt ${attempt + 1}/${maxRetries + 1}): "${userPrompt.substring(0, 50)}..."`);
+        logger.info(`Starting presentation generation with prompt (Attempt ${attempt + 1}/${maxRetries + 1}): "${userPrompt.substring(0, 50)}..."`);
         
         const messages = [
           { role: "system", content: this.systemPrompt },
           { role: "user", content: userPrompt },
         ];
 
-        yield* this.streamOpenRouter(messages);
+        yield* this.streamOpenRouter(messages, "presentation");
         logger.info("AI generation successful, parsing JSON...");
         return;
       } catch (error: any) {
@@ -128,49 +147,128 @@ export class AIGeneratorService {
         if (attempt === maxRetries) {
           throw new Error(`AI generation failed after ${maxRetries} retries: ${error.message}`);
         }
-        yield { type: "reasoning", text: `\n[Error encountered. Retrying (${attempt + 1}/${maxRetries})...]\n` };
+        yield { type: "reasoning", text: `\n[Loading...]\n` };
         await new Promise(res => setTimeout(res, 2000));
       }
     }
   }
 
-  async *enhancePresentationStream(userModificationRequest: string, presentationJson: any): AsyncGenerator<any, void, unknown> {
+  async *enhancePresentationStream(
+    userModificationRequest: string,
+    presentationJson: any
+  ): AsyncGenerator<any, void, unknown> {
     const maxRetries = 2;
+
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        logger.info(`Starting AI enhancement with request (Attempt ${attempt + 1}/${maxRetries + 1}): "${userModificationRequest.substring(0, 50)}..."`);
-        
-        const trimmedPresentation = {
-          title: presentationJson.title,
-          description: presentationJson.description,
-          theme: presentationJson.theme,
-          slides: presentationJson.slides?.map((s: any) => ({
-            id: s.id,
-            type: s.type,
-            title: s.title,
-            subtitle: s.subtitle,
-            options: s.options?.map((o: any) => ({ id: o.id, text: o.text, isCorrect: o.isCorrect })),
-            settings: s.settings,
-          }))
-        };
+        logger.info(
+          `Starting AI enhancement with request (Attempt ${attempt + 1}/${maxRetries + 1})`
+        );
 
-        const userMessage = `EXISTING PRESENTATION:\n${JSON.stringify(trimmedPresentation)}\n\nUSER MODIFICATION REQUEST:\n${userModificationRequest}`;
+        const userMessage = JSON.stringify({
+          existingPresentation: presentationJson,
+          modificationRequest: userModificationRequest,
+        });
+
         const messages = [
           { role: "system", content: this.enhancementPrompt },
           { role: "user", content: userMessage },
         ];
 
-        yield* this.streamOpenRouter(messages);
+        yield* this.streamOpenRouter(messages, "enhancement");
         logger.info("AI enhancement successful, parsing JSON...");
         return;
       } catch (error: any) {
-        logger.error(`Error in AIGeneratorService enhancePresentationStream (Attempt ${attempt + 1}):`, error);
+        logger.error(
+          `Error in AIGeneratorService enhancePresentationStream (Attempt ${attempt + 1}):`,
+          error
+        );
+
         if (attempt === maxRetries) {
-          throw new Error(`AI enhancement failed after ${maxRetries} retries: ${error.message}`);
+          throw new Error(
+            `AI enhancement failed after ${maxRetries} retries: ${error.message}`
+          );
         }
-        yield { type: "reasoning", text: `\n[Error encountered. Retrying (${attempt + 1}/${maxRetries})...]\n` };
+
+        yield { type: "progress", text: "\n[Loading...]\n" };
+        await new Promise((res) => setTimeout(res, 2000));
+      }
+    }
+  }
+
+  async contextBuilderChat(
+    conversationHistory: { role: string; content: string }[]
+  ): Promise<{ ready: boolean; question: string | null; enrichedPrompt: string | null }> {
+    const apiKey = ENV.AI_API_KEY;
+    if (!apiKey) {
+      throw new Error("AI_API_KEY is not configured.");
+    }
+
+    const messages = [
+      { role: "system", content: this.contextBuilderPrompt },
+      ...conversationHistory,
+    ];
+
+    const maxRetries = 2;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        logger.info(`Starting context building with ${conversationHistory.length} messages (Attempt ${attempt + 1}/${maxRetries + 1})`);
+
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+            "HTTP-Referer": ENV.CLIENT_URL[0] || "http://localhost:5173",
+            "X-Title": "Live Polling System",
+          },
+          body: JSON.stringify({
+            model: ENV.AI_CONTEXT_MODEL,
+            stream: false,
+            max_tokens: 1024,
+            messages,
+          }),
+        });
+
+        if (!response.ok) {
+          const errText = await response.text();
+          throw new Error(`OpenRouter API error: ${response.status} - ${errText}`);
+        }
+
+        const data = await response.json();
+        const content = data.choices?.[0]?.message?.content;
+
+        if (!content) {
+          throw new Error("No content returned from context builder");
+        }
+
+        // Extract JSON from the response
+        let jsonString = content.trim();
+        const firstBrace = jsonString.indexOf('{');
+        const lastBrace = jsonString.lastIndexOf('}');
+        if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+          jsonString = jsonString.substring(firstBrace, lastBrace + 1);
+        }
+
+        const parsed = JSON.parse(jsonString);
+
+        // Validate and auto-correct the context builder output
+        const validated = await this.jsonValidator.validateAndCorrect(parsed, "context");
+
+        return {
+          ready: Boolean(validated.ready),
+          question: validated.question || null,
+          enrichedPrompt: validated.enrichedPrompt || null,
+        };
+      } catch (error: any) {
+        logger.error(`Error in AIGeneratorService context builder (Attempt ${attempt + 1}):`, error);
+        if (attempt === maxRetries) {
+          throw new Error(`Context building failed after ${maxRetries} retries: ${error.message}`);
+        }
         await new Promise(res => setTimeout(res, 2000));
       }
     }
+    
+    throw new Error("Unexpected error in contextBuilderChat");
   }
 }

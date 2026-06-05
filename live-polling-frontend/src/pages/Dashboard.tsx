@@ -100,7 +100,10 @@ export default function Dashboard() {
                   </div>
 
                   <h1 className="max-w-2xl text-4xl font-black leading-[0.98] tracking-[-0.045em] text-slate-950 dark:text-white sm:text-5xl">
-                    Welcome back!
+                    Build your next{" "}
+                    <span className="bg-gradient-to-r from-primary to-[#33C3FF] bg-clip-text text-transparent dark:from-white dark:to-[#33C3FF]">
+                      live session.
+                    </span>
                   </h1>
 
                   <p className="mt-4 max-w-xl text-base leading-8 text-slate-500 dark:text-slate-400">
@@ -112,7 +115,7 @@ export default function Dashboard() {
                     <Button
                       size="lg"
                       onClick={() => dispatch(openAIModal())}
-                      className="h-12 rounded-2xl bg-primary px-6 font-black text-white shadow-none transition-all duration-300 hover:-translate-y-0.5 hover:bg-primary/90"
+                      className="h-12 rounded-2xl bg-primary dark:!border-primary/20 dark:border-1  px-6 font-black text-white shadow-none transition-all duration-300 hover:-translate-y-0.5 hover:bg-primary/90"
                     >
                       <Sparkles className="size-4" />
                       Generate with AI
@@ -122,7 +125,7 @@ export default function Dashboard() {
                       size="lg"
                       variant="outline"
                       onClick={handleCreateNew}
-                      className="h-12 rounded-2xl border-2 border-primary bg-white/70 px-6 font-black text-primary shadow-none transition-all duration-300 hover:-translate-y-0.5 hover:bg-primary/5 dark:bg-white/[0.04]"
+                      className="h-12 rounded-2xl border-2 dark:border-0 border-primary bg-white/70 px-6 font-black text-primary shadow-none transition-all duration-300 hover:-translate-y-0.5 hover:bg-primary/5 dark:hover:!bg-inherit dark:bg-white/[0.04]"
                     >
                       <Plus className="size-4" />
                       Start from Scratch

@@ -13,7 +13,7 @@ import {
   type NumberSlide,
   type QuizSlide,
 } from "@/types/presentation";
-import { cn } from "@/lib/utils";
+import { cn, getContrastColor } from "@/lib/utils";
 import { Star, ThumbsUp } from "lucide-react";
 import { type SlideCanvasProps, type ThumbnailSize } from "./types";
 import {
@@ -93,6 +93,7 @@ export function renderSlideContent(
           slide={slide}
           presentationId={presentationId}
           isPreview={isPreview}
+          responses={responses}
         />
       );
     case "content":
@@ -121,6 +122,7 @@ export function renderSlideContent(
           slide={slide}
           presentationId={presentationId}
           isPreview={isPreview}
+          responses={responses}
         />
       );
     case "ranking":
@@ -322,10 +324,13 @@ function MultipleChoiceContent({
             <div
               key={option.id}
               className={cn(
-                "relative flex items-center justify-start rounded-xl font-medium text-white transition-transform overflow-hidden",
+                "relative flex items-center justify-start rounded-xl font-medium transition-transform overflow-hidden border-2",
                 isPreview ? "p-4 text-base" : "p-6 text-lg"
               )}
-              style={{ backgroundColor: "rgba(255,255,255,0.1)" }}
+              style={{ 
+                backgroundColor: "transparent",
+                borderColor: `${slide.theme.textColor}10`
+              }}
             >
               <div 
                 className="absolute inset-0 z-0 transition-all duration-500 ease-in-out" 
@@ -335,8 +340,18 @@ function MultipleChoiceContent({
                   opacity: totalResponses > 0 ? 1 : 0.8
                 }} 
               />
-              <div className="relative z-10 flex items-center w-full">
-                <span className="mr-3 flex size-8 shrink-0 items-center justify-center rounded-full bg-white/20 text-sm">
+              <div 
+                className="relative z-10 flex items-center w-full"
+                style={{ color: totalResponses > 0 && percentage < 50 ? slide.theme.textColor : getContrastColor(option.color || slide.theme.accentColor) }}
+              >
+                <span 
+                  className="mr-3 flex size-8 shrink-0 items-center justify-center rounded-full text-sm" 
+                  style={{ 
+                    backgroundColor: (totalResponses === 0 || percentage >= 50)
+                      ? (getContrastColor(option.color || slide.theme.accentColor) === '#ffffff' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)')
+                      : `${slide.theme.textColor}15`
+                  }}
+                >
                   {String.fromCharCode(65 + index)}
                 </span>
                 <InlineTextEdit
@@ -369,11 +384,13 @@ function OpenEndedContent({
   thumbnailSize,
   presentationId,
   isPreview,
+  responses = [],
 }: {
   thumbnailSize?: ThumbnailSize | undefined;
   slide: OpenEndedSlide;
   presentationId?: string | undefined;
   isPreview?: boolean | undefined;
+  responses?: any[] | undefined;
 }) {
   const dispatch = useAppDispatch();
   const isThumbnail = thumbnailSize !== false;
@@ -445,14 +462,34 @@ function OpenEndedContent({
           style={{ color: slide.theme.textColor }}
         />
       )}
-      <div
-        className="w-full max-w-xl rounded-xl border-2 border-dashed p-8 text-center"
-        style={{ borderColor: slide.theme.accentColor + "40" }}
-      >
-        <p className="text-muted-foreground">
-          {slide.placeholder || "Participants will type their answers here..."}
-        </p>
-      </div>
+      {responses && responses.length > 0 ? (
+        <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 overflow-y-auto max-h-[60vh] px-4">
+          {responses.map((response: any, i: number) => (
+            <div 
+              key={i} 
+              className="p-4 rounded-xl border-2 text-left shadow-sm transition-all hover:scale-[1.01]"
+              style={{ 
+                backgroundColor: `${slide.theme.accentColor}10`,
+                borderColor: `${slide.theme.accentColor}30`,
+                color: slide.theme.textColor
+              }}
+            >
+              <p className="text-base font-medium break-words">{String(response)}</p>
+            </div>
+          ))}
+        </div>
+      ) : isPreview ? (
+        <div className="text-xl font-medium opacity-50" style={{ color: slide.theme.textColor }}>Waiting for responses...</div>
+      ) : (
+        <div
+          className="w-full max-w-xl rounded-xl border-2 border-dashed p-8 text-center"
+          style={{ borderColor: slide.theme.accentColor + "40" }}
+        >
+          <p className="text-muted-foreground">
+            {slide.placeholder || "Participants will type their answers here..."}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -692,11 +729,13 @@ function RatingContent({
   thumbnailSize,
   presentationId,
   isPreview,
+  responses = [],
 }: {
   thumbnailSize?: ThumbnailSize | undefined;
   slide: RatingSlide;
   presentationId?: string | undefined;
   isPreview?: boolean | undefined;
+  responses?: any[] | undefined;
 }) {
   const dispatch = useAppDispatch();
   const isThumbnail = thumbnailSize !== false;
@@ -707,6 +746,7 @@ function RatingContent({
       dispatch(updateSlide({ presentationId, slideId: slide.id, updates }));
     }
   };
+
   const renderRatingUI = () => {
     const meta = (slide as any).meta || {};
     const ratingType = slide.ratingType || meta.ratingType || "stars";
@@ -715,52 +755,170 @@ function RatingContent({
     const maxLabel = slide.maxLabel || meta.maxLabel;
     const minLabel = slide.minLabel || meta.minLabel;
 
+    const validResponses = (responses || []).map((r) => Number(r)).filter((num) => !isNaN(num));
+    const totalCount = validResponses.length;
+    const avg = totalCount > 0 ? validResponses.reduce((a, b) => a + b, 0) / totalCount : 0;
+
     switch (ratingType) {
-      case "stars":
+      case "stars": {
+        const starHighlight = totalCount > 0 ? avg : 3;
         return (
-          <div className="flex gap-2">
-            {Array.from({ length: maxValue }).map((_, i) => (
-              <Star
-                key={i}
-                className="size-12 cursor-pointer transition-all hover:scale-110"
-                style={{
-                  color:
-                    i < 3
-                      ? slide.theme.accentColor
-                      : slide.theme.textColor + "30",
-                  fill: i < 3 ? slide.theme.accentColor : "none",
-                }}
-              />
-            ))}
+          <div className="flex flex-col items-center gap-4">
+            <div className="flex gap-2">
+              {Array.from({ length: maxValue }).map((_, i) => (
+                <Star
+                  key={i}
+                  className="size-12 transition-all"
+                  style={{
+                    color:
+                      i < Math.round(starHighlight)
+                        ? slide.theme.accentColor
+                        : slide.theme.textColor + "30",
+                    fill: i < Math.round(starHighlight) ? slide.theme.accentColor : "none",
+                  }}
+                />
+              ))}
+            </div>
+            {totalCount > 0 && (
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-5xl font-extrabold font-mono" style={{ color: slide.theme.accentColor }}>
+                  {avg.toFixed(1)}
+                </span>
+                <span className="text-sm font-medium opacity-70" style={{ color: slide.theme.textColor }}>
+                  Average rating ({totalCount} response{totalCount !== 1 ? "s" : ""})
+                </span>
+              </div>
+            )}
           </div>
         );
-      case "emoji":
+      }
+      case "emoji": {
         const emojis = ["😡", "😕", "😐", "🙂", "😊"];
+        const emojiHighlight = totalCount > 0 ? Math.round(avg) : 3;
         return (
-          <div className="flex gap-4">
-            {emojis.slice(0, maxValue).map((emoji, i) => (
-              <button
-                key={i}
-                className="text-4xl transition-transform hover:scale-125"
-              >
-                {emoji}
-              </button>
-            ))}
+          <div className="flex flex-col items-center gap-4">
+            <div className="flex gap-4">
+              {emojis.slice(0, maxValue).map((emoji, i) => (
+                <span
+                  key={i}
+                  className={`text-5xl transition-transform ${
+                    i + 1 === emojiHighlight ? "scale-125 opacity-100" : "opacity-30"
+                  }`}
+                >
+                  {emoji}
+                </span>
+              ))}
+            </div>
+            {totalCount > 0 && (
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-5xl font-extrabold font-mono" style={{ color: slide.theme.accentColor }}>
+                  {avg.toFixed(1)}
+                </span>
+                <span className="text-sm font-medium opacity-70" style={{ color: slide.theme.textColor }}>
+                  Average rating ({totalCount} response{totalCount !== 1 ? "s" : ""})
+                </span>
+              </div>
+            )}
           </div>
         );
-      case "nps":
+      }
+      case "nps": {
+        if (totalCount > 0) {
+          const promoters = validResponses.filter((v) => v >= 9).length;
+          const passives = validResponses.filter((v) => v === 7 || v === 8).length;
+          const detractors = validResponses.filter((v) => v <= 6).length;
+
+          const npsScore = Math.round(((promoters - detractors) / totalCount) * 100);
+          const promoterPct = Math.round((promoters / totalCount) * 100);
+          const passivePct = Math.round((passives / totalCount) * 100);
+          const detractorPct = Math.round((detractors / totalCount) * 100);
+
+          return (
+            <div className="w-full max-w-lg flex flex-col items-center gap-6">
+              <div className="flex items-center justify-center gap-6">
+                <div className="flex flex-col items-center p-4 rounded-2xl bg-white/5 border border-white/10 min-w-[120px]">
+                  <span
+                    className="text-4xl font-black font-mono"
+                    style={{
+                      color:
+                        npsScore > 0
+                          ? "#10b981"
+                          : npsScore < 0
+                          ? "#ef4444"
+                          : slide.theme.textColor,
+                    }}
+                  >
+                    {npsScore > 0 ? `+${npsScore}` : npsScore}
+                  </span>
+                  <span className="text-xs uppercase tracking-wider font-semibold opacity-60 mt-1" style={{ color: slide.theme.textColor }}>
+                    NPS Score
+                  </span>
+                </div>
+                <div className="flex flex-col items-center p-4 rounded-2xl bg-white/5 border border-white/10 min-w-[120px]">
+                  <span className="text-4xl font-black font-mono" style={{ color: slide.theme.accentColor }}>
+                    {avg.toFixed(1)}
+                  </span>
+                  <span className="text-xs uppercase tracking-wider font-semibold opacity-60 mt-1" style={{ color: slide.theme.textColor }}>
+                    Average
+                  </span>
+                </div>
+              </div>
+
+              {/* Progress Bar Breakdown */}
+              <div className="w-full flex h-6 rounded-full overflow-hidden border border-white/10 shadow-inner">
+                {promoters > 0 && (
+                  <div
+                    className="bg-emerald-500 h-full flex items-center justify-center text-xs font-bold text-white transition-all"
+                    style={{ width: `${promoterPct}%` }}
+                  >
+                    {promoterPct >= 10 && `${promoterPct}%`}
+                  </div>
+                )}
+                {passives > 0 && (
+                  <div
+                    className="bg-amber-400 h-full flex items-center justify-center text-xs font-bold text-slate-900 transition-all"
+                    style={{ width: `${passivePct}%` }}
+                  >
+                    {passivePct >= 10 && `${passivePct}%`}
+                  </div>
+                )}
+                {detractors > 0 && (
+                  <div
+                    className="bg-rose-500 h-full flex items-center justify-center text-xs font-bold text-white transition-all"
+                    style={{ width: `${detractorPct}%` }}
+                  >
+                    {detractorPct >= 10 && `${detractorPct}%`}
+                  </div>
+                )}
+              </div>
+
+              {/* Breakdown Labels */}
+              <div className="flex justify-between w-full text-xs font-semibold" style={{ color: slide.theme.textColor }}>
+                <span className="flex items-center gap-1.5">
+                  <span className="size-2.5 rounded-full bg-rose-500" /> Detractors (0-6): {detractors}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="size-2.5 rounded-full bg-amber-400" /> Passives (7-8): {passives}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="size-2.5 rounded-full bg-emerald-500" /> Promoters (9-10): {promoters}
+                </span>
+              </div>
+              <span className="text-xs opacity-60 mt-1" style={{ color: slide.theme.textColor }}>
+                Based on {totalCount} response{totalCount !== 1 ? "s" : ""}
+              </span>
+            </div>
+          );
+        }
         return (
           <div className="flex gap-1">
             {Array.from({ length: 11 }).map((_, i) => (
               <button
                 key={i}
-                className="size-10 rounded-lg text-sm font-medium transition-all hover:scale-110"
+                className="size-10 rounded-lg text-sm font-medium transition-all"
                 style={{
-                  backgroundColor:
-                    i === 7
-                      ? slide.theme.accentColor
-                      : slide.theme.textColor + "10",
-                  color: i === 7 ? "#fff" : slide.theme.textColor,
+                  backgroundColor: slide.theme.textColor + "10",
+                  color: slide.theme.textColor,
                 }}
               >
                 {i}
@@ -768,51 +926,85 @@ function RatingContent({
             ))}
           </div>
         );
-      case "slider":
+      }
+      case "slider": {
+        const sliderVal = totalCount > 0 ? avg : (minValue + maxValue) / 2;
         return (
-          <div className="w-full max-w-md">
-            <div
-              className="h-2 rounded-full"
-              style={{ backgroundColor: slide.theme.textColor + "20" }}
-            >
+          <div className="w-full max-w-md flex flex-col items-center gap-4">
+            <div className="w-full">
               <div
-                className="h-full w-3/5 rounded-full transition-all"
-                style={{ backgroundColor: slide.theme.accentColor }}
-              />
-            </div>
-            <div
-              className="flex justify-between mt-2 text-sm"
-              style={{ color: slide.theme.textColor }}
-            >
-              <span>{minLabel || minValue}</span>
-              <span>{maxLabel || maxValue}</span>
-            </div>
-          </div>
-        );
-      default:
-        return (
-          <div className="flex gap-2">
-            {Array.from({ length: maxValue - minValue + 1 }).map(
-              (_, i) => (
-                <button
-                  key={i}
-                  className="size-12 rounded-xl text-lg font-medium transition-all hover:scale-110"
+                className="h-2 rounded-full"
+                style={{ backgroundColor: slide.theme.textColor + "20" }}
+              >
+                <div
+                  className="h-full rounded-full transition-all"
                   style={{
-                    backgroundColor:
-                      i === 2
-                        ? slide.theme.accentColor
-                        : slide.theme.textColor + "10",
-                    color: i === 2 ? "#fff" : slide.theme.textColor,
+                    backgroundColor: slide.theme.accentColor,
+                    width: `${((sliderVal - minValue) / (maxValue - minValue)) * 100}%`,
                   }}
-                >
-                  {minValue + i}
-                </button>
-              ),
+                />
+              </div>
+              <div
+                className="flex justify-between mt-2 text-sm"
+                style={{ color: slide.theme.textColor }}
+              >
+                <span>{minLabel || minValue}</span>
+                <span>{maxLabel || maxValue}</span>
+              </div>
+            </div>
+            {totalCount > 0 && (
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-5xl font-extrabold font-mono" style={{ color: slide.theme.accentColor }}>
+                  {avg.toFixed(1)}
+                </span>
+                <span className="text-sm font-medium opacity-70" style={{ color: slide.theme.textColor }}>
+                  Average score ({totalCount} response{totalCount !== 1 ? "s" : ""})
+                </span>
+              </div>
             )}
           </div>
         );
+      }
+      default: {
+        const rangeHighlight = totalCount > 0 ? Math.round(avg) : minValue + 2;
+        return (
+          <div className="flex flex-col items-center gap-4">
+            <div className="flex gap-2">
+              {Array.from({ length: maxValue - minValue + 1 }).map((_, i) => {
+                const val = minValue + i;
+                const isHighlighted = val === rangeHighlight;
+                return (
+                  <button
+                    key={i}
+                    className="size-12 rounded-xl text-lg font-medium transition-all"
+                    style={{
+                      backgroundColor: isHighlighted
+                        ? slide.theme.accentColor
+                        : slide.theme.textColor + "10",
+                      color: isHighlighted ? getContrastColor(slide.theme.accentColor) : slide.theme.textColor,
+                    }}
+                  >
+                    {val}
+                  </button>
+                );
+              })}
+            </div>
+            {totalCount > 0 && (
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-5xl font-extrabold font-mono" style={{ color: slide.theme.accentColor }}>
+                  {avg.toFixed(1)}
+                </span>
+                <span className="text-sm font-medium opacity-70" style={{ color: slide.theme.textColor }}>
+                  Average score ({totalCount} response{totalCount !== 1 ? "s" : ""})
+                </span>
+              </div>
+            )}
+          </div>
+        );
+      }
     }
   };
+
 
   if (isThumbnail) {
     return (
@@ -1150,8 +1342,8 @@ function ScalesContent({
   const steps = slide.steps ?? meta.steps ?? 5;
   const statement = slide.statement || meta.statement || "";
   const labels = slide.scaleLabels || meta.scaleLabels;
-  const leftLabel = Array.isArray(labels) ? labels[0] : labels?.left;
-  const rightLabel = Array.isArray(labels) ? labels[labels.length - 1] : labels?.right;
+  const leftLabel = (Array.isArray(labels) ? labels[0] : labels?.left) || "Strongly Disagree";
+  const rightLabel = (Array.isArray(labels) ? labels[labels.length - 1] : labels?.right) || "Strongly Agree";
 
   const totalResponses = responses?.length || 0;
   const counts: Record<number, number> = {};
@@ -1204,7 +1396,7 @@ function ScalesContent({
                   />
                   <span 
                     className="relative z-10 font-bold"
-                    style={{ color: percentage > 40 ? "#fff" : slide.theme.textColor }}
+                    style={{ color: percentage > 70 ? getContrastColor(slide.theme.accentColor) : slide.theme.textColor }}
                   >
                     {stepValue}
                   </span>
@@ -2032,11 +2224,14 @@ function QuizContent({
             <div
               key={option.id || index}
               className={cn(
-                "relative flex items-center justify-start rounded-xl font-medium text-white transition-transform overflow-hidden",
+                "relative flex items-center justify-start rounded-xl font-medium transition-transform overflow-hidden border-2",
                 isPreview ? "p-4 text-base" : "p-6 text-lg",
                 option.isCorrect && !isPreview ? "ring-4 ring-green-500" : ""
               )}
-              style={{ backgroundColor: "rgba(255,255,255,0.1)" }}
+              style={{ 
+                backgroundColor: "transparent",
+                borderColor: `${slide.theme.textColor}10`
+              }}
             >
               <div 
                 className="absolute inset-0 z-0 transition-all duration-500 ease-in-out" 
@@ -2046,8 +2241,18 @@ function QuizContent({
                   opacity: totalResponses > 0 ? 1 : 0.8
                 }} 
               />
-              <div className="relative z-10 flex items-center w-full">
-                <span className="mr-3 flex size-8 shrink-0 items-center justify-center rounded-full bg-white/20 text-sm">
+              <div 
+                className="relative z-10 flex items-center w-full"
+                style={{ color: totalResponses > 0 && percentage < 50 ? slide.theme.textColor : getContrastColor(option.color || slide.theme.accentColor) }}
+              >
+                <span 
+                  className="mr-3 flex size-8 shrink-0 items-center justify-center rounded-full text-sm" 
+                  style={{ 
+                    backgroundColor: (totalResponses === 0 || percentage >= 50)
+                      ? (getContrastColor(option.color || slide.theme.accentColor) === '#ffffff' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)')
+                      : `${slide.theme.textColor}15`
+                  }}
+                >
                   {String.fromCharCode(65 + index)}
                 </span>
                 <InlineTextEdit

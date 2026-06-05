@@ -6,6 +6,10 @@ import {
   CreateTemplateDto,
   UpdateTemplateDto,
 } from "src/validators/template.validator";
+import { CacheService } from "src/utils/cache/cache.service";
+import { CacheKeys } from "src/utils/cache/cache.keys";
+
+const TEMPLATE_CACHE_TTL = 300; // 5 minutes
 
 export class TemplateService {
   private templateRepo = AppDataSource.getRepository(TemplateEntity);
@@ -25,6 +29,9 @@ export class TemplateService {
     const template = this.templateRepo.create(dto);
     const saved = await this.templateRepo.save(template);
     logger.info(`Template created: ${saved.id}`);
+
+    // Invalidate list cache
+    await CacheService.deleteKey(CacheKeys.templatesList());
     return saved;
   }
 
@@ -32,12 +39,20 @@ export class TemplateService {
    * Fetch all public templates (or all if admin)
    */
   async findAll(onlyPublic: boolean = true): Promise<TemplateEntity[]> {
-    const query = this.templateRepo.createQueryBuilder("template");
-    
     if (onlyPublic) {
-      query.where("template.isPublic = :isPublic", { isPublic: true });
+      return CacheService.remember(
+        CacheKeys.templatesList(),
+        TEMPLATE_CACHE_TTL,
+        async () => {
+          const query = this.templateRepo.createQueryBuilder("template");
+          query.where("template.isPublic = :isPublic", { isPublic: true });
+          query.orderBy("template.createdAt", "DESC");
+          return query.getMany();
+        }
+      );
     }
 
+    const query = this.templateRepo.createQueryBuilder("template");
     query.orderBy("template.createdAt", "DESC");
     return query.getMany();
   }
@@ -46,23 +61,36 @@ export class TemplateService {
    * Fetch a single template by ID
    */
   async findOne(id: string): Promise<TemplateEntity> {
-    const template = await this.templateRepo.findOne({ where: { id } });
-    if (!template) {
-      throw new ApiError("Template not found", 404, false);
-    }
-    return template;
+    return CacheService.remember(
+      CacheKeys.templateById(id),
+      TEMPLATE_CACHE_TTL,
+      async () => {
+        const template = await this.templateRepo.findOne({ where: { id } });
+        if (!template) {
+          throw new ApiError("Template not found", 404, false);
+        }
+        return template;
+      }
+    );
   }
 
   /**
    * Update a template
    */
   async update(id: string, dto: UpdateTemplateDto): Promise<TemplateEntity> {
-    const template = await this.findOne(id);
+    const template = await this.templateRepo.findOne({ where: { id } });
+    if (!template) {
+      throw new ApiError("Template not found", 404, false);
+    }
     
     this.templateRepo.merge(template, dto);
     const saved = await this.templateRepo.save(template);
     
     logger.info(`Template updated: ${saved.id}`);
+
+    // Invalidate caches
+    await CacheService.deleteKey(CacheKeys.templatesList());
+    await CacheService.deleteKey(CacheKeys.templateById(id));
     return saved;
   }
 
@@ -70,8 +98,15 @@ export class TemplateService {
    * Delete a template
    */
   async remove(id: string): Promise<void> {
-    const template = await this.findOne(id);
+    const template = await this.templateRepo.findOne({ where: { id } });
+    if (!template) {
+      throw new ApiError("Template not found", 404, false);
+    }
     await this.templateRepo.remove(template);
     logger.info(`Template deleted: ${id}`);
+
+    // Invalidate caches
+    await CacheService.deleteKey(CacheKeys.templatesList());
+    await CacheService.deleteKey(CacheKeys.templateById(id));
   }
 }

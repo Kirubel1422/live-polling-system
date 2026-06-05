@@ -1,67 +1,85 @@
-version: '3.8'
+version: "3.8"
 
 services:
-  db:
-    image: postgres:15-alpine
-    container_name: live-polling-db
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: live_polling
-    ports:
-      - "5433:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d live_polling"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   backend:
     build:
       context: https://github.com/Kirubel1422/live-polling-system.git#main:live-polling-backend
       dockerfile: Dockerfile
     container_name: live-polling-backend
     ports:
-      - "5000:5000"
+      - "${APP_PORT:-5000}:5000"
     environment:
       - APP_PORT=5000
       - NODE_ENV=dev
       - CLIENT_URL=http://localhost:5173
-      - DB_HOST=db
+      - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USERNAME=postgres
       - DB_PASSWORD=postgres
       - DB_NAME=live_polling
-      - JWT_SECRET=testsecret123
+      - JWT_SECRET=change-me
       - JWT_EXPIRES_IN=7d
-      - COOKIE_SECRET=cookiesecret123
+      - COOKIE_SECRET=change-me
       - COOKIE_DOMAIN=localhost
-      - AI_MODEL_NAME=openrouter/owl-alpha
-      # Uncomment and add your OpenRouter key to test AI generation
-      # - AI_API_KEY=your_openrouter_api_key
-      # OAuth - Google
-      # - GOOGLE_CLIENT_ID=yourgoogleclientid
-      # - GOOGLE_CLIENT_SECRET=yourgoogleclientsecret
-      # OAuth - GitHub
-      # - GITHUB_CLIENT_ID=yourgithubclientid
-      # - GITHUB_CLIENT_SECRET=yourgithubclientsecret
-      # Cloudinary
-      # - CLOUDINARY_CLOUD_NAME=yourcloudinarycloudname
-      # - CLOUDINARY_API_KEY=yourcloudinaryapikey
-      # - CLOUDINARY_API_SECRET=yourcloudinaryapsecret
-      # Mail delivery
-      # - SMTP_HOST=yoursmtphost
-      # - SMTP_PORT=yoursmtpport
-      # - SMTP_USER=yoursmtpuser
-      # - SMTP_PASS=yoursmtppass
+      - AI_MODEL_NAME=openai/gpt-oss-120b:free
+      - AI_API_KEY=
+      - GOOGLE_CLIENT_ID=
+      - GOOGLE_CLIENT_SECRET=
+      - GITHUB_CLIENT_ID=
+      - GITHUB_CLIENT_SECRET=
+      - CLOUDINARY_CLOUD_NAME=
+      - CLOUDINARY_API_KEY=
+      - CLOUDINARY_API_SECRET=
+      - SMTP_HOST=sandbox.smtp.mailtrap.io
+      - SMTP_PORT=2525
+      - SMTP_USER=
+      - SMTP_PASS=
+      - REDIS_URL=redis://redis:6379
+      - SENTRY_DSN=
+      - METRICS_TOKEN=change-me
+      - RATE_LIMIT_ENABLED=true
+      - SOCKET_REDIS_ADAPTER_ENABLED=true
+      - BULLMQ_ENABLED=true
+      - API_DOCS_ENABLED=true
+      - AI_CONTEXT_MODEL=google/gemini-3.1-flash-lite
     depends_on:
-      db:
+      postgres:
         condition: service_healthy
-    # volumes:
-    #   - ./live-polling-backend:/app
-    #   - /app/node_modules
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: live-polling-db
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-live_polling}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${DB_USERNAME:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: live-polling-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
   frontend:
     build:
@@ -79,4 +97,5 @@ services:
     #   - /app/node_modules
 
 volumes:
-  postgres_data:
+  pgdata:
+  redisdata:

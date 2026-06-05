@@ -4,16 +4,18 @@ import validate from "src/validators/validate";
 import { RegisterSchema, LoginSchema } from "src/validators/auth.validator";
 import passport from "passport";
 import { ENV } from "src/constants/dotenv";
+import { authLimiter, passwordResetLimiter } from "src/utils/rate-limit/rate-limiters";
 
 const router = Router();
 const authController = new AuthController();
 
 // 1. Register
-router.post("/register", validate(RegisterSchema), authController.register);
+router.post("/register", authLimiter, validate(RegisterSchema), authController.register);
 
 // 2. Login
 router.post(
   "/login",
+  authLimiter,
   validate(LoginSchema),
   passport.authenticate("local", { session: false }),
   authController.login
@@ -31,14 +33,15 @@ router.get(
 
 // 5. Verification & Password Reset
 router.get("/verify-email", authController.verifyEmail);
-router.post("/forgot-password", authController.forgotPassword);
-router.post("/reset-password", authController.resetPassword);
+router.post("/forgot-password", passwordResetLimiter, authController.forgotPassword);
+router.post("/reset-password", passwordResetLimiter, authController.resetPassword);
 
 // ── Google OAuth ───────────────────────────────────────────────────────────
 
 if (ENV.GOOGLE_CLIENT_ID && ENV.GOOGLE_CLIENT_SECRET) {
   router.get(
     "/google",
+    authLimiter,
     passport.authenticate("google", {
       session: false,
       scope: ["profile", "email"],
@@ -47,6 +50,7 @@ if (ENV.GOOGLE_CLIENT_ID && ENV.GOOGLE_CLIENT_SECRET) {
 
   router.get(
     "/google/callback",
+    authLimiter,
     passport.authenticate("google", {
       session: false,
       failureRedirect: "/login",
@@ -60,6 +64,7 @@ if (ENV.GOOGLE_CLIENT_ID && ENV.GOOGLE_CLIENT_SECRET) {
 if (ENV.GITHUB_CLIENT_ID && ENV.GITHUB_CLIENT_SECRET) {
   router.get(
     "/github",
+    authLimiter,
     passport.authenticate("github", {
       session: false,
       scope: ["user:email"],
@@ -68,6 +73,7 @@ if (ENV.GITHUB_CLIENT_ID && ENV.GITHUB_CLIENT_SECRET) {
 
   router.get(
     "/github/callback",
+    authLimiter,
     passport.authenticate("github", {
       session: false,
       failureRedirect: "/login",

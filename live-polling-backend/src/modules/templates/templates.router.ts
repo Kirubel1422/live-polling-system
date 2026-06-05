@@ -5,41 +5,44 @@ import {
   CreateTemplateSchema,
   UpdateTemplateSchema,
 } from "src/validators/template.validator";
+import { templateMutationLimiter } from "src/utils/rate-limit/rate-limiters";
 
 const router = Router();
 const templateController = new TemplateController();
 
 /**
- * POST /api/templates
+ * GET /api/templates — public, no heavy rate limit (uses cache)
+ */
+router.get("/", templateController.findAll);
+
+/**
+ * GET /api/templates/:id — public, no heavy rate limit (uses cache)
+ */
+router.get("/:id", templateController.findOne);
+
+/**
+ * POST /api/templates — mutation, rate limited
  */
 router.post(
   "/",
+  templateMutationLimiter,
   validate(CreateTemplateSchema),
   templateController.create
 );
 
 /**
- * GET /api/templates
- */
-router.get("/", templateController.findAll);
-
-/**
- * GET /api/templates/:id
- */
-router.get("/:id", templateController.findOne);
-
-/**
- * PUT /api/templates/:id
+ * PUT /api/templates/:id — mutation, rate limited
  */
 router.put(
   "/:id",
+  templateMutationLimiter,
   validate(UpdateTemplateSchema),
   templateController.update
 );
 
 /**
- * DELETE /api/templates/:id
+ * DELETE /api/templates/:id — mutation, rate limited
  */
-router.delete("/:id", templateController.remove);
+router.delete("/:id", templateMutationLimiter, templateController.remove);
 
 export default router;

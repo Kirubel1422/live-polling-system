@@ -7,6 +7,8 @@ import jwt from "jsonwebtoken";
 import { ENV } from "src/constants/dotenv";
 import crypto from "crypto";
 import { sendEmail } from "src/utils/mailer";
+import { enqueueEmail } from "src/queues/email.queue";
+import logger from "src/utils/logger/logger";
 
 export class AuthService {
   private userRepo = AppDataSource.getRepository(UserEntity);
@@ -31,13 +33,23 @@ export class AuthService {
 
     const savedUser = await this.userRepo.save(user);
 
-    // Send verification email asynchronously
+    // Send verification email
     const verificationUrl = `${ENV.CLIENT_URL[0]}/verify-email?token=${verificationToken}`;
-    sendEmail(
-      savedUser.email,
-      "Verify your email address",
-      `<p>Hi ${savedUser.displayName},</p><p>Please verify your email address by clicking the link below:</p><p><a href="${verificationUrl}">${verificationUrl}</a></p>`
-    ).catch(err => console.error("Failed to send verification email:", err));
+    const emailHtml = `<p>Hi ${savedUser.displayName},</p><p>Please verify your email address by clicking the link below:</p><p><a href="${verificationUrl}">${verificationUrl}</a></p>`;
+
+    if (ENV.BULLMQ_ENABLED) {
+      enqueueEmail({
+        to: savedUser.email,
+        subject: "Verify your email address",
+        html: emailHtml,
+      }).catch(err => logger.error(`Failed to enqueue verification email: ${err}`));
+    } else {
+      sendEmail(
+        savedUser.email,
+        "Verify your email address",
+        emailHtml
+      ).catch(err => logger.error(`Failed to send verification email: ${err}`));
+    }
 
     const { password, ...userWithoutPassword } = savedUser as any;
     return userWithoutPassword as Partial<UserEntity>;
@@ -72,11 +84,17 @@ export class AuthService {
     await this.userRepo.save(user);
 
     const resetUrl = `${ENV.CLIENT_URL[0]}/reset-password?token=${resetToken}`;
-    await sendEmail(
-      user.email,
-      "Password Reset Request",
-      `<p>You requested a password reset.</p><p>Click here to reset your password:</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>If you did not request this, please ignore this email.</p>`
-    );
+    const emailHtml = `<p>You requested a password reset.</p><p>Click here to reset your password:</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>If you did not request this, please ignore this email.</p>`;
+
+    if (ENV.BULLMQ_ENABLED) {
+      await enqueueEmail({
+        to: user.email,
+        subject: "Password Reset Request",
+        html: emailHtml,
+      });
+    } else {
+      await sendEmail(user.email, "Password Reset Request", emailHtml);
+    }
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {

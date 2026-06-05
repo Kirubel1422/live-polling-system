@@ -12,9 +12,15 @@ import {
 } from './data.const';
 import { useNavigate } from 'react-router-dom';
 import type { ChatMessage, AIModalActions } from './types';
-import { useAppDispatch } from '@/store/hooks';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { addPresentation } from '@/store/presentationsSlice';
 import { ENV } from '@/config/env';
+import {
+  appendMessage,
+  setPhase,
+  setEnrichedPrompt as setEnrichedPromptAction,
+  clearInterview,
+} from '@/store/interviewSlice';
 import {
   DEFAULT_THEME,
   type Slide,
@@ -168,21 +174,127 @@ export async function simulateProgress(onProgress: (pct: number) => void): Promi
   }
 }
 
+const MAX_INTERVIEW_MESSAGES = 10;
+
 export function useAIModalState(actions: AIModalActions) {
   const [prompt, setPrompt] = useState('');
   const [generatedSlides, setGeneratedSlides] = useState<Slide[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isThinking, setIsThinking] = useState(false);
-  const [thinkingText, setThinkingText] = useState('Thinking ...');
+  const [thinkingText, setThinkingText] = useState('Please wait ...');
 
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
-  const handleGenerate = async () => {
+  // Redux-backed interview state
+  const interviewHistory = useAppSelector((state) => state.interview.history);
+  const interviewPhase = useAppSelector((state) => state.interview.phase);
+  const enrichedPrompt = useAppSelector((state) => state.interview.enrichedPrompt);
+
+  const handleInterviewSubmit = async () => {
     if (!prompt.trim()) return;
     const userMessage = prompt.trim();
+
+    // Add user bubble to chat UI
     setChatMessages((prev) => [...prev, { role: 'user', text: userMessage }]);
     setPrompt('');
+    setIsThinking(true);
+
+    // Append to Redux interview history
+    const updatedHistory = [
+      ...interviewHistory,
+      { role: 'user' as const, content: userMessage },
+    ];
+    dispatch(appendMessage({ role: 'user', content: userMessage }));
+
+    // Safety cap: if history is getting too long, force-transition to generation
+    if (updatedHistory.length >= MAX_INTERVIEW_MESSAGES) {
+      const fallbackPrompt = enrichedPrompt || userMessage;
+      dispatch(setPhase('generating'));
+      setChatMessages((prev) => [
+        ...prev,
+        { role: 'ai', text: 'I have enough context — generating your presentation now...' },
+      ]);
+      setIsThinking(false);
+      handleGenerate(fallbackPrompt);
+      return;
+    }
+
+    try {
+      const response = await fetch(`${ENV.API_URL}/presentations/context-interview`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ messages: updatedHistory }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get interview response');
+      }
+
+      const json = await response.json();
+      const result = json.data;
+
+      if (result.ready && result.enrichedPrompt) {
+        // Interview complete — transition to generation
+        dispatch(appendMessage({ role: 'assistant', content: result.enrichedPrompt }));
+        dispatch(setEnrichedPromptAction(result.enrichedPrompt));
+        dispatch(setPhase('generating'));
+
+        setChatMessages((prev) => [
+          ...prev,
+          { role: 'ai', text: 'Perfect, I have everything I need — generating now...' },
+        ]);
+        setIsThinking(false);
+        handleGenerate(result.enrichedPrompt);
+      } else if (result.question) {
+        // More questions — add AI response to chat
+        dispatch(appendMessage({ role: 'assistant', content: result.question }));
+        setChatMessages((prev) => [
+          ...prev,
+          { role: 'ai', text: result.question },
+        ]);
+        setIsThinking(false);
+      } else {
+        // Unexpected response shape — fallback
+        const fallbackQuestion = "Could you tell me more about what you'd like to create?";
+        dispatch(appendMessage({ role: 'assistant', content: fallbackQuestion }));
+        setChatMessages((prev) => [
+          ...prev,
+          { role: 'ai', text: fallbackQuestion },
+        ]);
+        setIsThinking(false);
+      }
+    } catch (error) {
+      setIsThinking(false);
+      setChatMessages((prev) => [
+        ...prev,
+        { role: 'ai', text: "Could you tell me more about what you'd like to create?" },
+      ]);
+    }
+  };
+
+  const handleSkipInterview = () => {
+    const skipPrompt = enrichedPrompt || interviewHistory.find((m) => m.role === 'user')?.content || prompt.trim();
+    if (!skipPrompt) return;
+    dispatch(setPhase('generating'));
+    setChatMessages((prev) => [
+      ...prev,
+      { role: 'ai', text: 'Skipping ahead — generating your presentation now...' },
+    ]);
+    handleGenerate(skipPrompt);
+  };
+
+  const handleGenerate = async (promptOverride?: string) => {
+    const userMessage = promptOverride || prompt.trim();
+    if (!userMessage) return;
+
+    // Only add user bubble & clear prompt if no override (direct generation, not from interview)
+    if (!promptOverride) {
+      setChatMessages((prev) => [...prev, { role: 'user', text: userMessage }]);
+      setPrompt('');
+    }
+
     setIsThinking(true);
     actions.onDispatchStatus('generating');
     actions.onDispatchProgress(0);
@@ -291,6 +403,7 @@ export function useAIModalState(actions: AIModalActions) {
     setGeneratedSlides([]);
     setChatMessages([]);
     setIsThinking(false);
+    dispatch(clearInterview());
   };
 
   return {
@@ -300,7 +413,10 @@ export function useAIModalState(actions: AIModalActions) {
     chatMessages,
     isThinking,
     thinkingText,
+    interviewPhase,
     handleGenerate,
+    handleInterviewSubmit,
+    handleSkipInterview,
     handleClose,
   };
 }

@@ -1,5 +1,5 @@
 import Lottie from 'lottie-react';
-import generating from '../../assets/generating-loading.json';
+import generating from '../../assets/robot.json';
 import idle from '../../assets/idle.json';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -8,6 +8,7 @@ import { MoveUp, Sparkles } from 'lucide-react';
 import { useLoadingFact } from './hooks';
 import { SUGGESTION_CHIPS } from './data.const';
 import type { ChatMessage, SuggestionChip } from './types';
+import { cn } from '@/lib';
 
 export function ChatBubble({ msg }: { msg: ChatMessage }) {
   if (msg.role === 'user') {
@@ -98,14 +99,11 @@ export function ChatHistory({
   if (messages.length === 0 && !isThinking) return null;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col-reverse gap-4 overflow-y-auto pr-1">
-      <div className="flex flex-col gap-4">
-        {messages.map((msg, i) => (
-          <ChatBubble key={i} msg={msg} />
-        ))}
-
-        {isThinking && <ThinkingBubble text={thinkingText} />}
-      </div>
+    <div className="custom-scrollbar flex min-h-0 flex-1 flex-col-reverse gap-4 overflow-y-auto pr-2 pl-1 pb-2">
+      {isThinking && <ThinkingBubble text={thinkingText} />}
+      {[...messages].reverse().map((msg, i) => (
+        <ChatBubble key={i} msg={msg} />
+      ))}
     </div>
   );
 }
@@ -200,6 +198,7 @@ export function LeftPanel({
   prompt,
   setPrompt,
   onSubmit,
+  onSkip,
   placeholderText,
 }: {
   messages: ChatMessage[];
@@ -208,9 +207,11 @@ export function LeftPanel({
   prompt: string;
   setPrompt: (v: string) => void;
   onSubmit: () => void;
+  onSkip?: () => void;
   placeholderText: string;
 }) {
   const isFirstMessage = messages.length === 0 && !isThinking;
+  const hasAIMessage = messages.some((m) => m.role === 'ai');
 
   return (
     <div className="relative z-10 flex min-h-0 w-full flex-col gap-4 overflow-hidden bg-white/[0.34] p-5 backdrop-blur-xl lg:w-[32%] dark:bg-white/[0.035]">
@@ -235,6 +236,17 @@ export function LeftPanel({
         isThinking={isThinking}
         thinkingText={thinkingText}
       />
+
+      {onSkip && hasAIMessage && !isThinking && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onSkip}
+          className="h-auto self-end px-2 py-1 text-xs text-slate-400 hover:text-primary"
+        >
+          Skip — generate now →
+        </Button>
+      )}
 
       <PromptInput
         value={prompt}
@@ -279,7 +291,7 @@ export function GeneratingPreview({
 }) {
   return (
     <div className="flex flex-col items-center justify-center">
-      <div className="rounded-[2rem] bg-white/60 p-4 dark:bg-white/[0.04]">
+      <div className={cn("p-4", !isReasoning && "dark:bg-white/[0.04] rounded-[2rem] bg-white/60 backdrop-blur-xl")}>
         <Lottie
           animationData={generating}
           loop
@@ -327,7 +339,7 @@ export function RightPanel({
 }) {
   const loadingFact = useLoadingFact(isThinking);
 
-  const isReasoning = Boolean(thinkingText && thinkingText !== 'Thinking ...');
+  const isReasoning = Boolean(thinkingText && thinkingText !== 'Loading ...');
   const displayLines = isReasoning
     ? extractReadableThoughts(thinkingText)
     : [loadingFact];

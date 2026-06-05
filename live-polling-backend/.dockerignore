@@ -1,0 +1,11 @@
+node_modules
+dist
+logs
+.env
+.git
+coverage
+*.md
+.prettierrc
+.prettierignore
+eslint.config.js
+vitest.config.ts

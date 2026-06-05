@@ -9,6 +9,10 @@ import {
   UpdateSlideDto,
   ReorderSlidesDto,
 } from "src/validators/slide.validator";
+import { CacheService } from "src/utils/cache/cache.service";
+import { CacheKeys } from "src/utils/cache/cache.keys";
+
+const SLIDE_CACHE_TTL = 120; // 2 minutes
 
 /** Slide types that require at least one option row */
 const CHOICE_SLIDE_TYPES = new Set([
@@ -32,6 +36,13 @@ export class SlideService {
     this.reorder = this.reorder.bind(this);
     this.duplicate = this.duplicate.bind(this);
     this.updateSettings = this.updateSettings.bind(this);
+  }
+
+  /** Invalidate slide and parent presentation caches */
+  private async invalidateSlideCache(presentationId: string): Promise<void> {
+    await CacheService.deleteKey(CacheKeys.slidesByPresentationId(presentationId));
+    await CacheService.deletePattern(`slide:${presentationId}:*`);
+    await CacheService.deleteKey(CacheKeys.presentationById(presentationId));
   }
 
   // ── Private helpers ─────────────────────────────────────────────────────────
@@ -67,15 +78,19 @@ export class SlideService {
   ): Promise<SlideEntity> {
     await this.assertPresentation(presentationId, ownerId);
 
-    const slide = await this.slideRepo
-      .createQueryBuilder("slide")
-      .leftJoinAndSelect("slide.options", "option")
-      .leftJoinAndSelect("slide.responses", "response")
-      .where("slide.id = :slideId", { slideId })
-      .andWhere("slide.presentationId = :presentationId", { presentationId })
-      .orderBy("option.order", "ASC")
-      .addOrderBy("response.createdAt", "ASC")
-      .getOne();
+    const slide = await CacheService.remember(
+      CacheKeys.slideById(presentationId, slideId),
+      SLIDE_CACHE_TTL,
+      () => this.slideRepo
+        .createQueryBuilder("slide")
+        .leftJoinAndSelect("slide.options", "option")
+        .leftJoinAndSelect("slide.responses", "response")
+        .where("slide.id = :slideId", { slideId })
+        .andWhere("slide.presentationId = :presentationId", { presentationId })
+        .orderBy("option.order", "ASC")
+        .addOrderBy("response.createdAt", "ASC")
+        .getOne()
+    );
 
     if (!slide) {
       throw new ApiError("Slide not found", 404, false);
@@ -132,6 +147,7 @@ export class SlideService {
       }
 
       logger.info(`Slide created: ${savedSlide.id} (type: ${dto.type})`);
+      await this.invalidateSlideCache(presentationId);
       return this.findSlideWithOptions(savedSlide.id, presentationId);
     });
   }
@@ -142,15 +158,19 @@ export class SlideService {
   async findAllByPresentation(presentationId: string, ownerId?: string): Promise<SlideEntity[]> {
     await this.assertPresentation(presentationId, ownerId);
 
-    return this.slideRepo
-      .createQueryBuilder("slide")
-      .leftJoinAndSelect("slide.options", "option")
-      .leftJoinAndSelect("slide.responses", "response")
-      .where("slide.presentationId = :presentationId", { presentationId })
-      .orderBy("slide.order", "ASC")
-      .addOrderBy("option.order", "ASC")
-      .addOrderBy("response.createdAt", "ASC")
-      .getMany();
+    return CacheService.remember(
+      CacheKeys.slidesByPresentationId(presentationId),
+      SLIDE_CACHE_TTL,
+      () => this.slideRepo
+        .createQueryBuilder("slide")
+        .leftJoinAndSelect("slide.options", "option")
+        .leftJoinAndSelect("slide.responses", "response")
+        .where("slide.presentationId = :presentationId", { presentationId })
+        .orderBy("slide.order", "ASC")
+        .addOrderBy("option.order", "ASC")
+        .addOrderBy("response.createdAt", "ASC")
+        .getMany()
+    );
   }
 
   /**
@@ -188,7 +208,7 @@ export class SlideService {
         slide.meta = { ...slide.meta, ...meta };
       }
 
-      await manager.save(slide);
+      await manager.save(SlideEntity, slide);
 
       // Replace options if provided
       if (options !== undefined) {
@@ -220,6 +240,7 @@ export class SlideService {
         logger.info(`Slide ${slideId} options updated (${options?.length || 0} options)`);
       }
 
+      await this.invalidateSlideCache(presentationId);
       return this.findSlideWithOptions(slideId, presentationId);
     });
   }
@@ -229,10 +250,10 @@ export class SlideService {
    * After deletion, re-normalises the order of remaining slides.
    */
   async remove(slideId: string, presentationId: string, ownerId?: string): Promise<void> {
-    const slide = await this.findSlideWithOptions(slideId, presentationId, ownerId);
+    await this.findSlideWithOptions(slideId, presentationId, ownerId);
 
     await AppDataSource.manager.transaction(async (manager) => {
-      await manager.remove(slide);
+      await manager.delete(SlideEntity, slideId);
 
       // Re-normalise order for remaining slides
       const remaining = await manager
@@ -248,6 +269,7 @@ export class SlideService {
     });
 
     logger.info(`Slide deleted: ${slideId}`);
+    await this.invalidateSlideCache(presentationId);
   }
 
   /**
@@ -284,6 +306,7 @@ export class SlideService {
     });
 
     logger.info(`Slides reordered for presentation: ${presentationId}`);
+    await this.invalidateSlideCache(presentationId);
     return this.findAllByPresentation(presentationId);
   }
 
@@ -303,6 +326,7 @@ export class SlideService {
     await this.slideRepo.save(slide);
 
     logger.info(`Slide ${slideId} settings updated`);
+    await this.invalidateSlideCache(presentationId);
     return this.findSlideWithOptions(slideId, presentationId);
   }
 
@@ -366,6 +390,7 @@ export class SlideService {
       logger.info(`Slide duplicated: ${slideId} → ${savedSlide.id} at order ${insertAtOrder}`);
     });
 
+    await this.invalidateSlideCache(presentationId);
     // Fetch AFTER the transaction commits so this.slideRepo can see the new row
     return this.findSlideWithOptions(newSlideId!, presentationId);
   }

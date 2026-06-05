@@ -1,4 +1,5 @@
 import winston from "winston";
+import { ENV } from "src/constants/dotenv";
 
 const levels = {
   error: 0,
@@ -9,8 +10,8 @@ const levels = {
 };
 
 const level = () => {
-  const env = process.env.NODE_ENV || "dev";
-  return env === "dev" ? "debug" : "info";
+  // Enable 'http' logging level in production so requests are logged
+  return ENV.NODE_ENV === "dev" ? "debug" : "http";
 };
 
 const colors = {
@@ -23,27 +24,41 @@ const colors = {
 
 winston.addColors(colors);
 
-const format = winston.format.combine(
+// Clean text format for log files
+const uncoloredFormat = winston.format.combine(
+  winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
+  winston.format.printf(
+    (info) => `[${info.timestamp}] ${info.level.toUpperCase()}: ${info.message}`
+  )
+);
+
+// Colored format for terminal
+const coloredFormat = winston.format.combine(
   winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
   winston.format.colorize({ all: true }),
   winston.format.printf(
-    (info) => `${info.timestamp} ${info.level}: ${info.message}`
+    (info) => `[${info.timestamp}] ${info.level}: ${info.message}`
   )
 );
 
 const transports = [
-  new winston.transports.Console(),
+  new winston.transports.Console({
+    format: coloredFormat,
+  }),
   new winston.transports.File({
     filename: "logs/error.log",
     level: "error",
+    format: uncoloredFormat,
   }),
-  new winston.transports.File({ filename: "logs/app.log" }),
+  new winston.transports.File({ 
+    filename: "logs/app.log",
+    format: uncoloredFormat,
+  }),
 ];
 
 const logger = winston.createLogger({
   level: level(),
   levels,
-  format,
   transports,
 });
 

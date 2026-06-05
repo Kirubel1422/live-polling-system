@@ -1,16 +1,31 @@
+# ── Stage 1: Build ──────────────────────────────────────────────────────────
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY tsconfig.json ./
+COPY src/ ./src/
+
+RUN npm run build
+
+# ── Stage 2: Production ────────────────────────────────────────────────────
 FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy package files and install dependencies
 COPY package*.json ./
-RUN npm install
+RUN npm ci --omit=dev
 
-# Copy source code
-COPY . .
+COPY --from=builder /app/dist ./dist
 
 # Expose backend port
 EXPOSE 5000
 
-# Run the seed script and then the development server
-CMD ["sh", "-c", "npm run seed:templates && npm run dev"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:5000/api/health/live || exit 1
+
+CMD ["node", "dist/app.js"]
