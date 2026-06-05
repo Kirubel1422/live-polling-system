@@ -23,7 +23,10 @@ export default function AIGenerationModal({
     chatMessages,
     isThinking,
     thinkingText,
+    interviewPhase,
     handleGenerate,
+    handleInterviewSubmit,
+    handleSkipInterview,
     handleClose,
   } = useAIModalState({
     onDispatchStatus: (s) => dispatch(setAIGenerationStatus(s)),
@@ -44,11 +47,12 @@ export default function AIGenerationModal({
 
           <LeftPanel
             messages={chatMessages}
-            isThinking={isThinking}
-            thinkingText={thinkingText}
+            isThinking={interviewPhase === 'interviewing' ? isThinking : false}
+            thinkingText={interviewPhase === 'interviewing' ? thinkingText : ''}
             prompt={prompt}
             setPrompt={setPrompt}
-            onSubmit={handleGenerate}
+            onSubmit={interviewPhase === 'interviewing' ? handleInterviewSubmit : handleGenerate}
+            onSkip={interviewPhase === 'interviewing' ? handleSkipInterview : undefined}
             placeholderText={placeholderText}
           />
 
@@ -57,7 +61,10 @@ export default function AIGenerationModal({
             className="relative z-10 hidden h-auto bg-slate-200/50 dark:bg-white/8 lg:block"
           />
 
-          <RightPanel isThinking={isThinking} thinkingText={thinkingText} />
+          <RightPanel 
+            isThinking={interviewPhase !== 'interviewing' ? isThinking : false} 
+            thinkingText={interviewPhase !== 'interviewing' ? thinkingText : ''} 
+          />
         </div>
       </DialogContent>
     </Dialog>

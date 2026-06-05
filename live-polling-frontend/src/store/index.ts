@@ -2,6 +2,7 @@ import { configureStore, createListenerMiddleware } from '@reduxjs/toolkit'
 import { setupListeners } from '@reduxjs/toolkit/query'
 import presentationsReducer, { updatePresentation } from './presentationsSlice'
 import editorReducer from './editorSlice'
+import interviewReducer from './interviewSlice'
 import presentationsApi from '@/api/presentations.api'
 import authApi from '@/api/auth.api'
 import templatesApi from '@/api/templates.api'
@@ -76,6 +77,7 @@ export const store = configureStore({
   reducer: {
     presentations: presentationsReducer,
     editor: editorReducer,
+    interview: interviewReducer,
     [presentationsApi.reducerPath]: presentationsApi.reducer,
     [authApi.reducerPath]: authApi.reducer,
     [templatesApi.reducerPath]: templatesApi.reducer,
