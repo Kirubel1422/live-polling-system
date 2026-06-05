@@ -1,3 +1,4 @@
+import { Button, Progress, Badge, Tooltip, TooltipContent, TooltipTrigger, Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui";
 /** Preview page for presenting a presentation in fullscreen. */
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
@@ -16,26 +17,11 @@ import {
   Wifi,
   X,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { cn, getContrastColor } from "@/lib/utils";
 import type { Slide } from "@/types/presentation";
 import { renderSlideContent } from "@/components/editor/SlideCanvas";
 import { QRCodeCanvas } from "qrcode.react";
 import { usePreviewHandlers } from "@/components/preview";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
 
 export default function Preview() {
   const {

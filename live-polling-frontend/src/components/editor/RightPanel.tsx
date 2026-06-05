@@ -1,15 +1,10 @@
+import { Input, Label, Switch, Slider, ScrollArea, Separator } from "@/components/ui";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setRightPanelTab } from "@/store/editorSlice";
 import { updateSlide, applyThemeToAll } from "@/store/presentationsSlice";
 import { useUpdatePresentationThemeMutation } from "@/api/presentations.api";
 import { useUpdateSlideSettingsMutation } from "@/api/slides.api";
 import { useRef, useCallback } from "react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Slider } from "@/components/ui/slider";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import {
   type Slide,

@@ -1,7 +1,6 @@
+import { Button, Input, Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, Label } from "@/components/ui";
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   Activity,
   KeyRound,
@@ -12,15 +11,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useJoinSessionMutation } from '@/api/participant.api';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
 
 export default function JoinPage() {
   const navigate = useNavigate();

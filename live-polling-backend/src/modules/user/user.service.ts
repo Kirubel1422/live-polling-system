@@ -41,21 +41,40 @@ export class UserService {
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new ApiError("User not found", 404);
 
-    return new Promise((resolve, reject) => {
-       const uploadStream = cloudinary.uploader.upload_stream(
-          { folder: "live-polling/avatars", public_id: `avatar_${userId}`, overwrite: true },
-          async (error, result) => {
-             if (error) return reject(new ApiError("Image upload failed", 500));
-             if (result) {
-                user.avatarUrl = result.secure_url;
-                await this.userRepo.save(user);
-                const { password, ...userWithoutPassword } = user as any;
-                resolve(userWithoutPassword);
-             }
-          }
-       );
-       uploadStream.end(fileBuffer);
-    });
+    const timestamp = Math.round((new Date).getTime() / 1000);
+    const params = { folder: "live-polling/avatars", public_id: `avatar_${userId}`, overwrite: true, timestamp };
+    const signature = cloudinary.utils.api_sign_request(params, process.env.CLOUDINARY_API_SECRET!);
+
+    const formData = new FormData();
+    formData.append("file", new Blob([new Uint8Array(fileBuffer)], { type: "image/png" }), "avatar.png");
+    formData.append("api_key", process.env.CLOUDINARY_API_KEY!);
+    formData.append("timestamp", timestamp.toString());
+    formData.append("signature", signature);
+    formData.append("folder", "live-polling/avatars");
+    formData.append("public_id", `avatar_${userId}`);
+    formData.append("overwrite", "true");
+
+    try {
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        console.error("Cloudinary error response:", await res.text());
+        throw new ApiError("Image upload failed", 500);
+      }
+
+      const result = await res.json();
+      user.avatarUrl = result.secure_url;
+      await this.userRepo.save(user);
+
+      const { password, ...userWithoutPassword } = user as any;
+      return userWithoutPassword;
+    } catch (error) {
+      console.error("Cloudinary fetch error:", error);
+      throw new ApiError("Image upload failed", 500);
+    }
   }
 
   async updateEmailNotifications(userId: string, enabled: boolean) {

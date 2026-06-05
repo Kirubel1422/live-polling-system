@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -11,7 +12,6 @@ import {
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { addPresentation } from "@/store/presentationsSlice";
 import { openAIModal } from "@/store/editorSlice";
-import { Button } from "@/components/ui/button";
 import { DEFAULT_THEME } from "@/types/presentation";
 import { store } from "@/store";
 import DashboardHeader from "@/components/dashboard/header";

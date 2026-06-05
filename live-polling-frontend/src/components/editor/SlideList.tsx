@@ -1,3 +1,4 @@
+import { ScrollArea } from "@/components/ui";
 import { useMemo } from 'react';
 import {
   DndContext,
@@ -17,7 +18,6 @@ import {
 import { useAppDispatch } from '@/store/hooks';
 import { reorderSlides } from '@/store/presentationsSlice';
 import { setSelectedSlide } from '@/store/editorSlice';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { type SlideListProps } from './types';
 import SlideThumbnail from './SlideThumbnail';
 import { useReorderSlidesMutation } from '@/api/presentations.api';

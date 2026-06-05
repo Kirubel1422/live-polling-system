@@ -1,5 +1,4 @@
 import { Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { useParticipantPresentation } from '@/components/participant-presentation/hook';
 import { 
   PresenterOfflineView, 
@@ -16,6 +15,7 @@ import {
   NumberSlide, 
   ContentSlide 
 } from '@/components/participant-presentation';
+import { Button } from '@/components/ui';
 
 export default function ParticipantPresentation() {
   const {

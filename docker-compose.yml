@@ -50,7 +50,7 @@ services:
     restart: unless-stopped
 
   postgres:
-    image: postgres:16-alpine
+    image: postgres:17-alpine
     container_name: live-polling-db
     environment:
       POSTGRES_USER: ${DB_USERNAME:-postgres}
@@ -68,7 +68,7 @@ services:
     restart: unless-stopped
 
   redis:
-    image: redis:7-alpine
+    image: redis:7.4-alpine
     container_name: live-polling-redis
     ports:
       - "6379:6379"
@@ -92,9 +92,7 @@ services:
       - VITE_API_URL=http://localhost:5000/api
     depends_on:
       - backend
-    # volumes:
-    #   - ./live-polling-frontend:/app
-    #   - /app/node_modules
+    restart: unless-stopped
 
 volumes:
   pgdata:
