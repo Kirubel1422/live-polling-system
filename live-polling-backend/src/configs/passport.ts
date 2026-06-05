@@ -1,6 +1,6 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { Strategy as JwtStrategy, ExtractJwt } from "passport-jwt";
+import { Strategy as JwtStrategy } from "passport-jwt";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { Strategy as GitHubStrategy } from "passport-github2";
 import { AppDataSource } from "./database";
@@ -43,7 +43,8 @@ passport.use(
 const extractJwtFromCookie = (req: any) => {
   let token = null;
   if (req && req.cookies) token = req.cookies["jwt"];
-  return token || ExtractJwt.fromAuthHeaderAsBearerToken()(req);
+  if (token) return token;
+  return null;
 };
 
 passport.use(

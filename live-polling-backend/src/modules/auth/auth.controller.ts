@@ -4,6 +4,7 @@ import { RegisterDto } from "src/validators/auth.validator";
 import { ApiResp } from "src/utils/api/api.response";
 import { UserEntity } from "src/entities/User.entity";
 import { ENV } from "src/constants/dotenv";
+import { getCookieOptions } from "src/configs/cookie";
 
 export class AuthController {
   private authService: AuthService;
@@ -26,12 +27,7 @@ export class AuthController {
       const user = await this.authService.register(dto);
       const token = this.authService.generateToken(user);
       
-      res.cookie("jwt", token, {
-        httpOnly: true,
-        secure: ENV.NODE_ENV === "production",
-        sameSite: ENV.NODE_ENV === "production" ? "none" : "lax",
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      });
+      res.cookie("jwt", token, getCookieOptions(req));
 
       res.status(201).json(new ApiResp("User registered successfully", 201, true, { user, token }));
     } catch (error) {
@@ -48,12 +44,7 @@ export class AuthController {
 
       const token = this.authService.generateToken(userWithoutPassword);
 
-      res.cookie("jwt", token, {
-        httpOnly: true,
-        secure: ENV.NODE_ENV === "production",
-        sameSite: ENV.NODE_ENV === "production" ? "none" : "lax",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      });
+      res.cookie("jwt", token, getCookieOptions(req));
 
       res.status(200).json(new ApiResp("Logged in successfully", 200, true, { user: userWithoutPassword, token }));
     } catch (error) {
@@ -64,9 +55,7 @@ export class AuthController {
   async logout(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       res.cookie("jwt", "", {
-        httpOnly: true,
-        secure: ENV.NODE_ENV === "production",
-        sameSite: ENV.NODE_ENV === "production" ? "none" : "lax",
+        ...getCookieOptions(req),
         expires: new Date(0),
       });
       res.status(200).json(new ApiResp("Logged out successfully", 200, true));
@@ -91,12 +80,7 @@ export class AuthController {
 
       const token = this.authService.generateToken(userWithoutPassword);
 
-      res.cookie("jwt", token, {
-        httpOnly: true,
-        secure: ENV.NODE_ENV === "production",
-        sameSite: ENV.NODE_ENV === "production" ? "none" : "lax",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      });
+      res.cookie("jwt", token, getCookieOptions(req));
 
       // Redirect to the frontend after successful OAuth
       const clientUrl = ENV.CLIENT_URL[0]; // first allowed origin
