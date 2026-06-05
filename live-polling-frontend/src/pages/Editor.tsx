@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent } from 'react';
+import { useState, useEffect, useRef, type ChangeEvent } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ChevronLeft,
@@ -65,6 +65,14 @@ function EditorToolbar({
   const [enhancePrompt, setEnhancePrompt] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
 
+  const prevIsEnhancing = useRef(isEnhancing);
+  useEffect(() => {
+    if (prevIsEnhancing.current && !isEnhancing) {
+      setModalOpen(false);
+    }
+    prevIsEnhancing.current = isEnhancing;
+  }, [isEnhancing]);
+
   return (
     <header className="relative z-20 border-b border-slate-200/70 bg-white/[0.88] px-4 py-3 backdrop-blur-xl dark:border-white/10 dark:bg-[#07111f]/90">
       <div className="mx-auto flex max-w-full items-center justify-between gap-4">
@@ -120,7 +128,7 @@ function EditorToolbar({
           </Tooltip>
 
           <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-            <DialogContent className="rounded-[2rem] border border-slate-200/70 bg-white/[0.95] p-6 shadow-none backdrop-blur-xl sm:max-w-[520px] dark:border-white/10 dark:bg-slate-950/95">
+            <DialogContent className="rounded-[2rem] border border-slate-200/70 bg-white/[0.95] p-6 shadow-none backdrop-blur-xl sm:max-w-[572px] dark:border-white/10 dark:bg-slate-950/95">
               <DialogHeader>
                 <DialogTitle className="text-2xl font-black tracking-[-0.035em] text-slate-950 dark:text-white">
                   Enhance with AI
@@ -139,7 +147,7 @@ function EditorToolbar({
                   )}
 
                   <p className="line-clamp-4 w-full overflow-hidden text-ellipsis break-words text-center text-sm text-primary/80">
-                    {enhanceReasoning || 'Thinking...'}
+                    {enhanceReasoning || 'Please wait...'}
                   </p>
                 </div>
               ) : (
