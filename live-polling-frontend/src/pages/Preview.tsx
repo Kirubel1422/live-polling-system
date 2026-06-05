@@ -1,4 +1,5 @@
 /** Preview page for presenting a presentation in fullscreen. */
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   ChevronLeft,
@@ -23,7 +24,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+import { cn, getContrastColor } from "@/lib/utils";
 import type { Slide } from "@/types/presentation";
 import { renderSlideContent } from "@/components/editor/SlideCanvas";
 import { QRCodeCanvas } from "qrcode.react";
@@ -56,6 +57,8 @@ export default function Preview() {
     isFullscreen,
     handleToggleFullscreen,
   } = usePreviewHandlers();
+
+  const [mockResponses, setMockResponses] = useState<Record<string, any[]>>({});
 
   if (!presentation) {
     return (
@@ -344,7 +347,10 @@ export default function Preview() {
                     {currentSlide && (
                       <SlideRenderer
                         slide={currentSlide}
-                        responses={slideResponses[currentSlide.id] || []}
+                        responses={[
+                          ...(slideResponses[currentSlide.id] || []),
+                          ...(mockResponses[currentSlide.id] || []),
+                        ]}
                       />
                     )}
                   </div>
@@ -431,7 +437,20 @@ export default function Preview() {
                         className="absolute left-0 top-0 flex h-[781px] w-[375px] origin-top-left flex-col"
                         style={{ transform: "scale(0.64)" }}
                       >
-                        {currentSlide && <PhoneSlideView slide={currentSlide} />}
+                        {currentSlide && (
+                          <PhoneSlideView
+                            slide={currentSlide}
+                            onSubmit={(val) => {
+                              setMockResponses((prev) => ({
+                                ...prev,
+                                [currentSlide.id]: [
+                                  ...(prev[currentSlide.id] || []),
+                                  val,
+                                ],
+                              }));
+                            }}
+                          />
+                        )}
                       </div>
                     </div>
                   </div>
@@ -473,10 +492,35 @@ function SlideRenderer({
   );
 }
 
-function PhoneSlideView({ slide }: { slide: Slide }) {
-  const answer: any = undefined;
+function PhoneSlideView({
+  slide,
+  onSubmit,
+}: {
+  slide: Slide;
+  onSubmit?: (val: any) => void;
+}) {
+  const [answer, setAnswer] = useState<any>(undefined);
+  const [submitted, setSubmitted] = useState<boolean>(false);
+
+  useEffect(() => {
+    setAnswer(undefined);
+    setSubmitted(false);
+  }, [slide.id]);
 
   const renderContent = () => {
+    if (submitted && slide.type !== "qa") {
+      return (
+        <div className="flex flex-col items-center justify-center h-full text-center p-8">
+          <div className="size-16 rounded-full flex items-center justify-center mb-4 border-2" style={{ backgroundColor: `${slide.theme?.accentColor || '#3b82f6'}15`, borderColor: `${slide.theme?.accentColor || '#3b82f6'}40` }}>
+            <svg className="size-8" style={{ color: slide.theme?.accentColor || '#3b82f6' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold mb-2" style={{ color: slide.theme?.textColor || '#ffffff' }}>Response Sent!</h3>
+          <p className="opacity-70" style={{ color: slide.theme?.textColor || '#ffffff' }}>Wait for the presenter to move to the next slide.</p>
+        </div>
+      );
+    }
     switch (slide.type) {
       case "multiple-choice":
       case "quiz":
@@ -492,13 +536,15 @@ function PhoneSlideView({ slide }: { slide: Slide }) {
               {slide.options?.map((option: any, index: number) => (
                 <button
                   key={option.id}
-                  className="flex items-center rounded-2xl p-4 text-left font-bold transition-all hover:opacity-90"
+                  onClick={() => setAnswer(option.id)}
+                  className={`flex items-center rounded-2xl p-4 text-left font-bold transition-all border-2 ${answer === option.id ? 'ring-4 ring-white shadow-lg scale-[1.02]' : 'hover:opacity-90'}`}
                   style={{
                     backgroundColor: option.color || slide.theme.accentColor,
-                    color: "#fff",
+                    color: getContrastColor(option.color || slide.theme.accentColor),
+                    borderColor: `${slide.theme.textColor}20`
                   }}
                 >
-                  <span className="mr-3 flex size-8 shrink-0 items-center justify-center rounded-full bg-white/20 text-sm">
+                  <span className="mr-3 flex size-8 shrink-0 items-center justify-center rounded-full text-sm" style={{ backgroundColor: getContrastColor(option.color || slide.theme.accentColor) === '#ffffff' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)' }}>
                     {String.fromCharCode(65 + index)}
                   </span>
                   <span
@@ -511,15 +557,25 @@ function PhoneSlideView({ slide }: { slide: Slide }) {
               ))}
             </div>
 
-            <Button
-              className="mt-2 h-14 w-full shrink-0 rounded-2xl text-lg font-black"
+            <button
+              className="mt-2 h-14 w-full shrink-0 rounded-2xl text-lg font-black border-2 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
-                backgroundColor: slide.theme.accentColor,
-                color: "#fff",
+                backgroundColor: answer 
+                  ? (slide.options?.find((o: any) => o.id === answer)?.color || slide.theme.accentColor) 
+                  : "#ffffff", 
+                color: answer 
+                  ? getContrastColor(slide.options?.find((o: any) => o.id === answer)?.color || slide.theme.accentColor) 
+                  : "rgba(0,0,0,0.4)",
+                borderColor: `${slide.theme.textColor}20`
+              }}
+              disabled={!answer}
+              onClick={() => {
+                setSubmitted(true);
+                onSubmit?.(answer);
               }}
             >
               Submit
-            </Button>
+            </button>
           </div>
         );
 
@@ -544,19 +600,25 @@ function PhoneSlideView({ slide }: { slide: Slide }) {
                 }
                 placeholder={(slide as any).placeholder || "Type your answer..."}
                 value={answer || ""}
-                readOnly
+                onChange={(e) => setAnswer(e.target.value)}
               />
             </div>
 
-            <Button
-              className="mt-4 h-14 w-full rounded-2xl text-lg font-black"
+            <button
+              className="mt-4 h-14 w-full rounded-2xl text-lg font-black border-2 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
-                backgroundColor: slide.theme.accentColor,
-                color: "#fff",
+                backgroundColor: (answer && String(answer).trim() !== "") ? slide.theme.accentColor : "#ffffff",
+                color: (answer && String(answer).trim() !== "") ? getContrastColor(slide.theme.accentColor) : "rgba(0,0,0,0.4)",
+                borderColor: `${slide.theme.textColor}20`
+              }}
+              disabled={!answer || String(answer).trim() === ""}
+              onClick={() => {
+                setSubmitted(true);
+                onSubmit?.(answer);
               }}
             >
               Submit
-            </Button>
+            </button>
           </div>
         );
 
@@ -571,7 +633,7 @@ function PhoneSlideView({ slide }: { slide: Slide }) {
             <div className="mb-6 flex shrink-0 gap-2">
               <input
                 type="text"
-                className="h-12 flex-1 rounded-2xl border-2 bg-black/25 px-4 text-white transition-all focus:outline-none focus:ring-2"
+                className="h-12 flex-1 rounded-2xl border-2 bg-neutral-50 px-4 text-black transition-all focus:outline-none focus:ring-2"
                 style={
                   {
                     borderColor: slide.theme.accentColor + "60",
@@ -579,18 +641,21 @@ function PhoneSlideView({ slide }: { slide: Slide }) {
                   } as any
                 }
                 placeholder="Ask a question..."
-                readOnly
+                value={typeof answer === 'string' ? answer : ''}
+                onChange={(e) => setAnswer(e.target.value)}
               />
 
-              <Button
-                className="h-12 rounded-2xl px-6 font-black"
+              <button
+                className="h-12 rounded-2xl px-6 font-black border-2 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                 style={{
-                  backgroundColor: slide.theme.accentColor,
-                  color: "#fff",
+                  backgroundColor: (answer && String(answer).trim() !== "") ? slide.theme.accentColor : "#ffffff",
+                  color: (answer && String(answer).trim() !== "") ? getContrastColor(slide.theme.accentColor) : "rgba(0,0,0,0.4)",
+                  borderColor: `${slide.theme.textColor}20`
                 }}
+                disabled={!answer || !String(answer).trim()}
               >
                 Send
-              </Button>
+              </button>
             </div>
 
             <div className="flex flex-1 flex-col gap-3 overflow-y-auto pb-4">
@@ -618,9 +683,9 @@ function PhoneSlideView({ slide }: { slide: Slide }) {
             {ratingType === "stars" && (
               <div className="mb-10 flex flex-wrap justify-center gap-4">
                 {Array.from({ length: maxValue }).map((_, index) => (
-                  <button key={index}>
+                  <button key={index} onClick={() => setAnswer(index + 1)}>
                     <svg
-                      className="h-12 w-12 opacity-30 transition-all hover:opacity-70"
+                      className={`h-12 w-12 transition-all ${answer && answer > index ? 'opacity-100 scale-110 drop-shadow-md' : 'opacity-30 hover:opacity-70'}`}
                       style={{ color: slide.theme.accentColor }}
                       fill="currentColor"
                       viewBox="0 0 20 20"
@@ -637,7 +702,8 @@ function PhoneSlideView({ slide }: { slide: Slide }) {
                 {emojis.slice(0, maxValue).map((emoji, index) => (
                   <button
                     key={index}
-                    className="text-5xl opacity-50 transition-transform hover:opacity-100"
+                    onClick={() => setAnswer(index + 1)}
+                    className={`text-5xl transition-transform ${answer === index + 1 ? 'scale-125 drop-shadow-lg opacity-100' : 'opacity-50 hover:opacity-100'}`}
                   >
                     {emoji}
                   </button>
@@ -657,9 +723,10 @@ function PhoneSlideView({ slide }: { slide: Slide }) {
                   return (
                     <button
                       key={index}
-                      className="h-12 w-12 rounded-2xl text-lg font-black opacity-80 transition-all"
+                      onClick={() => setAnswer(value)}
+                      className={`h-12 w-12 rounded-2xl text-lg font-black transition-all ${answer === value ? 'ring-2 ring-white scale-110' : 'opacity-80'}`}
                       style={{
-                        backgroundColor: "rgba(255,255,255,0.1)",
+                        backgroundColor: answer === value ? slide.theme.accentColor : "rgba(255,255,255,0.1)",
                         color: slide.theme.textColor,
                       }}
                     >
@@ -670,15 +737,18 @@ function PhoneSlideView({ slide }: { slide: Slide }) {
               </div>
             )}
 
-            <Button
-              className="mt-4 h-14 w-full rounded-2xl text-lg font-black"
+            <button
+              className="mt-4 h-14 w-full rounded-2xl text-lg font-black border-2 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
-                backgroundColor: slide.theme.accentColor,
-                color: "#fff",
+                backgroundColor: answer ? slide.theme.accentColor : "#ffffff",
+                color: answer ? getContrastColor(slide.theme.accentColor) : "rgba(0,0,0,0.4)",
+                borderColor: `${slide.theme.textColor}20`
               }}
+              disabled={!answer}
+              onClick={() => setSubmitted(true)}
             >
               Submit
-            </Button>
+            </button>
           </div>
         );
       }
@@ -702,18 +772,22 @@ function PhoneSlideView({ slide }: { slide: Slide }) {
             />
 
             <div className="mb-4 flex w-full justify-between">
-              {Array.from({ length: steps }).map((_, index) => (
-                <button
-                  key={index}
-                  className="size-12 rounded-full text-sm font-bold transition-all hover:scale-105"
-                  style={{
-                    backgroundColor: "rgba(255,255,255,0.1)",
-                    color: slide.theme.textColor,
-                  }}
-                >
-                  {index + 1}
-                </button>
-              ))}
+              {Array.from({ length: steps }).map((_, index) => {
+                const isSelected = answer === index + 1;
+                return (
+                  <button
+                    key={index}
+                    onClick={() => setAnswer(index + 1)}
+                    className={`size-12 rounded-full text-sm font-bold transition-all ${isSelected ? 'scale-110 shadow-lg' : 'hover:scale-105'}`}
+                    style={{
+                      backgroundColor: isSelected ? slide.theme.accentColor : "rgba(255,255,255,0.1)",
+                      color: isSelected ? getContrastColor(slide.theme.accentColor) : slide.theme.textColor,
+                    }}
+                  >
+                    {index + 1}
+                  </button>
+                );
+              })}
             </div>
 
             <div className="mt-4 flex w-full justify-between text-sm font-medium opacity-80">
@@ -721,15 +795,21 @@ function PhoneSlideView({ slide }: { slide: Slide }) {
               <span dangerouslySetInnerHTML={{ __html: rightLabel }} />
             </div>
 
-            <Button
-              className="mt-12 h-14 w-full rounded-2xl text-lg font-black"
+            <button
+              className="mt-12 h-14 w-full rounded-2xl text-lg font-black border-2 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
-                backgroundColor: slide.theme.accentColor,
-                color: "#fff",
+                backgroundColor: answer ? slide.theme.accentColor : "#ffffff",
+                color: answer ? getContrastColor(slide.theme.accentColor) : "rgba(0,0,0,0.4)",
+                borderColor: `${slide.theme.textColor}20`
+              }}
+              disabled={!answer}
+              onClick={() => {
+                setSubmitted(true);
+                onSubmit?.(answer);
               }}
             >
               Submit
-            </Button>
+            </button>
           </div>
         );
       }
@@ -788,15 +868,20 @@ function PhoneSlideView({ slide }: { slide: Slide }) {
               ))}
             </div>
 
-            <Button
-              className="mt-2 h-14 w-full shrink-0 rounded-2xl text-lg font-black"
+            <button
+              className="mt-2 h-14 w-full shrink-0 rounded-2xl text-lg font-black border-2 flex items-center justify-center"
               style={{
                 backgroundColor: slide.theme.accentColor,
-                color: "#fff",
+                color: getContrastColor(slide.theme.accentColor),
+                borderColor: `${slide.theme.textColor}20`
+              }}
+              onClick={() => {
+                setSubmitted(true);
+                onSubmit?.(listItems);
               }}
             >
               Submit
-            </Button>
+            </button>
           </div>
         );
       }
@@ -853,15 +938,20 @@ function PhoneSlideView({ slide }: { slide: Slide }) {
               ))}
             </div>
 
-            <Button
-              className="mt-2 h-14 w-full shrink-0 rounded-2xl text-lg font-black"
+            <button
+              className="mt-2 h-14 w-full shrink-0 rounded-2xl text-lg font-black border-2 flex items-center justify-center"
               style={{
                 backgroundColor: slide.theme.accentColor,
-                color: "#fff",
+                color: getContrastColor(slide.theme.accentColor),
+                borderColor: `${slide.theme.textColor}20`
+              }}
+              onClick={() => {
+                setSubmitted(true);
+                onSubmit?.(pointItems);
               }}
             >
               Submit
-            </Button>
+            </button>
           </div>
         );
       }
@@ -876,25 +966,32 @@ function PhoneSlideView({ slide }: { slide: Slide }) {
 
             <input
               type="number"
-              className="h-20 w-full max-w-xs rounded-2xl bg-black/20 text-center text-4xl font-black focus:outline-none focus:ring-4"
+              className="h-20 w-full max-w-xs rounded-2xl bg-neutral-50 text-center text-4xl font-black focus:outline-none focus:ring-4 text-black"
               style={
                 {
                   "--tw-ring-color": slide.theme.accentColor,
                 } as any
               }
               placeholder="0"
-              readOnly
+              value={answer || ""}
+              onChange={(e) => setAnswer(e.target.value)}
             />
 
-            <Button
-              className="mt-12 h-14 w-full max-w-xs rounded-2xl text-lg font-black"
+            <button
+              className="mt-12 h-14 w-full max-w-xs rounded-2xl text-lg font-black border-2 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
-                backgroundColor: slide.theme.accentColor,
-                color: "#fff",
+                backgroundColor: (answer !== null && answer !== undefined && answer !== "") ? slide.theme.accentColor : "#ffffff",
+                color: (answer !== null && answer !== undefined && answer !== "") ? getContrastColor(slide.theme.accentColor) : "rgba(0,0,0,0.4)",
+                borderColor: `${slide.theme.textColor}20`
+              }}
+              disabled={answer === null || answer === undefined || answer === ""}
+              onClick={() => {
+                setSubmitted(true);
+                onSubmit?.(Number(answer));
               }}
             >
               Submit
-            </Button>
+            </button>
           </div>
         );
 
