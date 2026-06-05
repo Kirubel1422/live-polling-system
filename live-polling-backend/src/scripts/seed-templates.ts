@@ -467,6 +467,18 @@ const seedTemplates = async () => {
 
   await repo.save(entities);
   logger.info(`Successfully seeded ${entities.length} templates.`);
+
+  // Clear template caches in Redis
+  try {
+    const { connectRedis, disconnectRedis } = await import("../configs/redis");
+    const { CacheService } = await import("../utils/cache/cache.service");
+    await connectRedis();
+    await CacheService.deletePattern("template:*");
+    logger.info("Template caches cleared.");
+    await disconnectRedis();
+  } catch (err) {
+    logger.warn(`Could not clear Redis cache (Redis may not be running): ${err}`);
+  }
   
   process.exit(0);
 };

@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import { ENV } from "src/constants/dotenv";
+import logger from "src/utils/logger/logger";
 
 export const transporter = nodemailer.createTransport({
   host: ENV.SMTP_HOST,
@@ -12,7 +13,7 @@ export const transporter = nodemailer.createTransport({
 
 export const sendEmail = async (to: string, subject: string, html: string) => {
   if (!ENV.SMTP_USER || !ENV.SMTP_PASS) {
-    console.log(`Mock Email to ${to}: ${subject}\n\n${html}`);
+    logger.info(`[Mailer] Mock Email to ${to}: ${subject}`);
     return;
   }
   await transporter.sendMail({

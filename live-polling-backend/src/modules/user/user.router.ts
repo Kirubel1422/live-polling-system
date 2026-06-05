@@ -2,6 +2,7 @@ import { Router } from "express";
 import { UserController } from "./user.controller";
 import passport from "passport";
 import multer from "multer";
+import { userMutationLimiter, authLimiter } from "src/utils/rate-limit/rate-limiters";
 
 const router = Router();
 const userController = new UserController();
@@ -15,9 +16,9 @@ const upload = multer({
 // Require auth for all user routes
 router.use(passport.authenticate("jwt", { session: false }));
 
-router.put("/profile", userController.updateProfile);
-router.put("/password", userController.updatePassword);
-router.put("/notifications", userController.updateEmailNotifications);
-router.post("/avatar", upload.single("avatar"), userController.uploadAvatar);
+router.put("/profile", userMutationLimiter, userController.updateProfile);
+router.put("/password", authLimiter, userController.updatePassword);
+router.put("/notifications", userMutationLimiter, userController.updateEmailNotifications);
+router.post("/avatar", userMutationLimiter, upload.single("avatar"), userController.uploadAvatar);
 
 export default router;

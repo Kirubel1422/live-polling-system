@@ -7,6 +7,7 @@ import {
 } from "src/validators/presentation.validator";
 import slideRoutes from "src/modules/slides/slides.router";
 import passport from "passport";
+import { aiGenerationLimiter, generalApiLimiter } from "src/utils/rate-limit/rate-limiters";
 
 const router = Router();
 router.use(passport.authenticate("jwt", { session: false }));
@@ -18,6 +19,7 @@ const presentationController = new PresentationController();
  */
 router.post(
   "/",
+  generalApiLimiter,
   validate(CreatePresentationSchema),
   presentationController.create
 );
@@ -26,7 +28,7 @@ router.post(
  * POST /api/presentations/template/:templateId
  * Create a presentation from a template.
  */
-router.post("/template/:templateId", presentationController.createFromTemplate);
+router.post("/template/:templateId", generalApiLimiter, presentationController.createFromTemplate);
 
 /**
  * GET /api/presentations
@@ -38,13 +40,19 @@ router.get("/", presentationController.findAll);
  * POST /api/presentations/generate
  * Generate a presentation using AI.
  */
-router.post("/generate", presentationController.generate);
+router.post("/generate", aiGenerationLimiter, presentationController.generate);
+
+/**
+ * POST /api/presentations/context-interview
+ * Conversational context-gathering before generation.
+ */
+router.post("/context-interview", aiGenerationLimiter, presentationController.contextInterview);
 
 /**
  * POST /api/presentations/:id/enhance
  * Enhance a presentation using AI.
  */
-router.post("/:id/enhance", presentationController.enhance);
+router.post("/:id/enhance", aiGenerationLimiter, presentationController.enhance);
 
 /**
  * GET /api/presentations/:id
@@ -59,6 +67,7 @@ router.get("/:id", presentationController.findOne);
  */
 router.put(
   "/:id",
+  generalApiLimiter,
   validate(UpdatePresentationSchema),
   presentationController.update
 );
@@ -67,25 +76,25 @@ router.put(
  * DELETE /api/presentations/:id
  * Delete a presentation and all its slides.
  */
-router.delete("/:id", presentationController.remove);
+router.delete("/:id", generalApiLimiter, presentationController.remove);
 
 /**
  * POST /api/presentations/:id/duplicate
  * Deep-duplicate a presentation with new IDs.
  */
-router.post("/:id/duplicate", presentationController.duplicate);
+router.post("/:id/duplicate", generalApiLimiter, presentationController.duplicate);
 
 /**
  * PATCH /api/presentations/:id/theme
  * Apply a theme to the presentation and ALL its slides.
  */
-router.patch("/:id/theme", presentationController.updateTheme);
+router.patch("/:id/theme", generalApiLimiter, presentationController.updateTheme);
 
 /**
  * PATCH /api/presentations/:id/reorder
  * Reorder slides within a presentation.
  */
-router.patch("/:id/reorder", presentationController.reorderSlides);
+router.patch("/:id/reorder", generalApiLimiter, presentationController.reorderSlides);
 
 /**
  * /api/presentations/:id/slides — nested slides module
@@ -94,4 +103,3 @@ router.patch("/:id/reorder", presentationController.reorderSlides);
 router.use("/:id/slides", slideRoutes);
 
 export default router;
-

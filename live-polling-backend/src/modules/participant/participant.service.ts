@@ -6,6 +6,13 @@ import { PresentationEntity } from "src/entities/Presentation.entity";
 import { SlideEntity } from "src/entities/Slide.entity";
 import { ApiError } from "src/utils/api/api.response";
 import { getSocketIO } from "src/utils/socket";
+import { CacheService } from "src/utils/cache/cache.service";
+import { CacheKeys } from "src/utils/cache/cache.keys";
+import {
+  participantJoinTotal,
+  participantResponseTotal,
+  participantUpvoteTotal,
+} from "src/observability/metrics";
 
 export class ParticipantService {
   private liveSessionRepo = AppDataSource.getRepository(LiveSessionEntity);
@@ -53,6 +60,9 @@ export class ParticipantService {
     await this.participantRepo.save(participant);
 
     getSocketIO().to(`presentation:${session.presentationId}`).emit("participant-joined", participant);
+
+    participantJoinTotal.inc();
+    await CacheService.deleteKey(CacheKeys.sessionData(session.presentationId));
 
     return {
       participantId: participant.id,
@@ -150,6 +160,9 @@ export class ParticipantService {
       response
     });
 
+    participantResponseTotal.inc();
+    await CacheService.deleteKey(CacheKeys.sessionData(participant.session.presentationId));
+
     return response;
   }
 
@@ -202,6 +215,8 @@ export class ParticipantService {
       slideId: response.slideId,
       response
     });
+
+    participantUpvoteTotal.inc();
 
     return response;
   }

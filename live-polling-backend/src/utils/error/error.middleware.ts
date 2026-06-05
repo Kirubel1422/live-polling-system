@@ -1,16 +1,19 @@
 import { NextFunction, Request, Response } from "express";
 import logger from "../logger/logger";
 import { ApiError } from "../api/api.response";
+import { captureException } from "src/observability/sentry";
 
 export async function errorHandler(
   req: Request,
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
   error: unknown
 ) {
+  const requestId = (req as any).requestId || "-";
+
   // Log full error details including request context and stack trace
   const errorMessage = error instanceof Error ? error.stack || error.message : String(error);
-  logger.error(`[${req.method}] ${req.originalUrl} - ${errorMessage}`);
+  logger.error(`[${req.method}] ${req.originalUrl} [${requestId}] - ${errorMessage}`);
 
   // Custom API Error
   if (error instanceof ApiError) {
@@ -19,6 +22,7 @@ export async function errorHandler(
       statusCode: error.statusCode,
       success: error.success,
       data: error.data,
+      requestId,
     });
   }
 
@@ -35,6 +39,7 @@ export async function errorHandler(
         statusCode: 409,
         success: false,
         data: dbError.detail || {},
+        requestId,
       });
     }
     if (dbError.code === "23503") {
@@ -43,6 +48,7 @@ export async function errorHandler(
         statusCode: 400,
         success: false,
         data: {},
+        requestId,
       });
     }
   }
@@ -58,12 +64,19 @@ export async function errorHandler(
         statusCode: 401,
         success: false,
         data: {},
+        requestId,
       });
     }
   }
 
-  // Unknown fallback
+  // Unknown fallback — capture to Sentry
+  captureException(error, {
+    method: req.method,
+    url: req.originalUrl,
+    requestId,
+  });
+
   return res
     .status(500)
-    .json({ message: "Internal Server Error", statusCode: 500, success: false, data: {} });
+    .json({ message: "Internal Server Error", statusCode: 500, success: false, data: {}, requestId });
 }

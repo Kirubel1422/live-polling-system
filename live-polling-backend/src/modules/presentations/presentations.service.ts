@@ -5,6 +5,10 @@ import { SlideOptionEntity } from "src/entities/SlideOption.entity";
 import { ApiError } from "src/utils/api/api.response";
 import { CreatePresentationDto, UpdatePresentationDto } from "src/validators/presentation.validator";
 import logger from "src/utils/logger/logger";
+import { CacheService } from "src/utils/cache/cache.service";
+import { CacheKeys } from "src/utils/cache/cache.keys";
+
+const PRESENTATION_CACHE_TTL = 120; // 2 minutes
 
 export class PresentationService {
   private presentationRepo = AppDataSource.getRepository(PresentationEntity);
@@ -18,6 +22,16 @@ export class PresentationService {
     this.duplicate = this.duplicate.bind(this);
     this.updateTheme = this.updateTheme.bind(this);
     this.reorderSlides = this.reorderSlides.bind(this);
+  }
+
+  /** Invalidate all caches related to a presentation */
+  private async invalidatePresentation(id: string, ownerId?: string): Promise<void> {
+    await CacheService.deleteKey(CacheKeys.presentationById(id));
+    await CacheService.deletePattern(CacheKeys.slidesByPresentationId(id));
+    await CacheService.deletePattern(`slide:${id}:*`);
+    if (ownerId) {
+      await CacheService.deleteKey(CacheKeys.presentationListByOwner(ownerId));
+    }
   }
 
   /**
@@ -81,6 +95,12 @@ export class PresentationService {
     });
 
     logger.info(`Presentation ${presentationId} successfully processed and committed.`);
+
+    // Invalidate owner list cache
+    if (ownerId) {
+      await CacheService.deleteKey(CacheKeys.presentationListByOwner(ownerId));
+    }
+
     return this.findOne(presentationId);
   }
 
@@ -88,6 +108,17 @@ export class PresentationService {
    * Fetch all presentations. Optionally filter by ownerId once auth is wired.
    */
   async findAll(ownerId?: string): Promise<PresentationEntity[]> {
+    if (ownerId) {
+      return CacheService.remember(
+        CacheKeys.presentationListByOwner(ownerId),
+        PRESENTATION_CACHE_TTL,
+        () => this._findAllFromDb(ownerId)
+      );
+    }
+    return this._findAllFromDb();
+  }
+
+  private async _findAllFromDb(ownerId?: string): Promise<PresentationEntity[]> {
     const query = this.presentationRepo
       .createQueryBuilder("presentation")
       .leftJoinAndSelect("presentation.slides", "slide")
@@ -109,16 +140,22 @@ export class PresentationService {
    * Fetch a single presentation by ID — with all slides and options.
    */
   async findOne(id: string, ownerId?: string): Promise<PresentationEntity> {
-    const presentation = await this.presentationRepo
-      .createQueryBuilder("presentation")
-      .leftJoinAndSelect("presentation.slides", "slide")
-      .leftJoinAndSelect("slide.options", "option")
-      .leftJoinAndSelect("slide.responses", "response")
-      .where("presentation.id = :id", { id })
-      .orderBy("slide.order", "ASC")
-      .addOrderBy("option.order", "ASC")
-      .addOrderBy("response.createdAt", "ASC")
-      .getOne();
+    const presentation = await CacheService.remember(
+      CacheKeys.presentationById(id),
+      PRESENTATION_CACHE_TTL,
+      async () => {
+        return this.presentationRepo
+          .createQueryBuilder("presentation")
+          .leftJoinAndSelect("presentation.slides", "slide")
+          .leftJoinAndSelect("slide.options", "option")
+          .leftJoinAndSelect("slide.responses", "response")
+          .where("presentation.id = :id", { id })
+          .orderBy("slide.order", "ASC")
+          .addOrderBy("option.order", "ASC")
+          .addOrderBy("response.createdAt", "ASC")
+          .getOne();
+      }
+    );
 
     if (!presentation) {
       logger.error(`[PresentationService.findOne] Failed to retrieve presentation. ID: ${id} was not found in the database.`);
@@ -149,7 +186,7 @@ export class PresentationService {
         status: dto.status,
         theme: dto.theme,
       });
-      await manager.save(presentation);
+      await manager.save(PresentationEntity, presentation);
 
       // If slides are provided — replace all slides for this presentation
       if (dto.slides !== undefined) {
@@ -195,6 +232,7 @@ export class PresentationService {
     });
 
     logger.info(`Presentation ${updatedId} successfully updated and committed.`);
+    await this.invalidatePresentation(updatedId, ownerId);
     return this.findOne(updatedId);
   }
 
@@ -207,17 +245,18 @@ export class PresentationService {
     await AppDataSource.manager.transaction(async (manager) => {
       // 1. Update presentation theme
       manager.merge(PresentationEntity, presentation, { theme });
-      await manager.save(presentation);
+      await manager.save(PresentationEntity, presentation);
 
       // 2. Update all slides
       if (presentation.slides && presentation.slides.length > 0) {
         for (const slide of presentation.slides) {
           slide.theme = theme;
-          await manager.save(slide);
+          await manager.save(SlideEntity, slide);
         }
       }
     });
 
+    await this.invalidatePresentation(id, ownerId);
     return this.findOne(id);
   }
 
@@ -238,11 +277,12 @@ export class PresentationService {
         const slide = slideMap.get(slideId);
         if (slide) {
           slide.order = i;
-          await manager.save(slide);
+          await manager.save(SlideEntity, slide);
         }
       }
     });
 
+    await this.invalidatePresentation(id, ownerId);
     return this.findOne(id);
   }
 
@@ -250,9 +290,10 @@ export class PresentationService {
    * Delete a presentation by ID.
    */
   async remove(id: string, ownerId?: string): Promise<void> {
-    const presentation = await this.findOne(id, ownerId);
-    await this.presentationRepo.remove(presentation);
+    await this.findOne(id, ownerId);
+    await this.presentationRepo.delete(id);
     logger.info(`Presentation deleted: ${id}`);
+    await this.invalidatePresentation(id, ownerId);
   }
 
   /**

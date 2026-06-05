@@ -24,6 +24,7 @@ export class PresentationController {
     this.reorderSlides = this.reorderSlides.bind(this);
     this.generate = this.generate.bind(this);
     this.enhance = this.enhance.bind(this);
+    this.contextInterview = this.contextInterview.bind(this);
   }
 
   /** POST /api/presentations */
@@ -342,6 +343,25 @@ export class PresentationController {
         res.write(`data: ${JSON.stringify({ type: "error", message: error.message })}\n\n`);
         res.end();
       }
+    }
+  }
+
+  /** POST /api/presentations/context-interview */
+  async contextInterview(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { messages } = req.body;
+      if (!messages || !Array.isArray(messages) || messages.length === 0) {
+        res.status(400).json(new ApiResp("Messages array is required.", 400, false));
+        return;
+      }
+
+      const { AIGeneratorService } = await import("src/ai/ai-generator.service");
+      const aiService = new AIGeneratorService();
+
+      const result = await aiService.contextBuilderChat(messages);
+      res.status(200).json(new ApiResp("Context interview response.", 200, true, result));
+    } catch (error: any) {
+      res.status(500).json(new ApiResp(error.message, 500, false));
     }
   }
 }
