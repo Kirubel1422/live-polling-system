@@ -1,6 +1,4 @@
 import { Button, Input, Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, Label } from "@/components/ui";
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
 import {
   Activity,
   KeyRound,
@@ -9,48 +7,21 @@ import {
   Users,
   ArrowRight,
 } from 'lucide-react';
-import { toast } from 'sonner';
-import { useJoinSessionMutation } from '@/api/participant.api';
+import { useJoinPage } from '@/components/join-page';
+import { Link } from "react-router-dom";
 
 export default function JoinPage() {
-  const navigate = useNavigate();
-  const [joinSession, { isLoading }] = useJoinSessionMutation();
-  const [joinCode, setJoinCode] = useState('');
-  const [name, setName] = useState('');
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-
-  const handleVerifyCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!joinCode.trim()) {
-      return toast.error('Please enter a join code');
-    }
-
-    setIsDialogOpen(true);
-  };
-
-  const handleJoin = async () => {
-    if (!name.trim()) {
-      return toast.error('Please enter your name');
-    }
-
-    try {
-      const response = await joinSession({
-        joinCode: joinCode.trim().toUpperCase(),
-        name: name.trim(),
-      }).unwrap();
-
-      toast.success('Joined session successfully!');
-      localStorage.setItem(
-        `participant_${response.presentationId}`,
-        response.participantId,
-      );
-      setIsDialogOpen(false);
-      navigate(`/participant/presentation/${response.presentationId}`);
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to join session');
-    }
-  };
+  const {
+    joinCode,
+    setJoinCode,
+    name,
+    setName,
+    isDialogOpen,
+    setIsDialogOpen,
+    isLoading,
+    handleVerifyCode,
+    handleJoin,
+  } = useJoinPage();
 
   return (
     <div className="relative isolate flex min-h-screen items-center justify-center overflow-hidden bg-slate-50 px-4 py-10 text-slate-900 transition-colors dark:bg-[#07111f] dark:text-white">
@@ -148,7 +119,7 @@ export default function JoinPage() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="rounded-[2rem] border border-slate-200/70 bg-white/[0.95] p-6 shadow-none backdrop-blur-xl sm:max-w-md dark:border-white/10 dark:bg-slate-950/95">
+        <DialogContent className="rounded-[2rem] border border-slate-200/70 bg-white/[0.95] p-8 shadow-2xl backdrop-blur-xl sm:max-w-md dark:border-white/10 dark:bg-[#0a1628]/60">
           <DialogHeader>
             <div className="mb-4 flex size-14 items-center justify-center rounded-2xl bg-primary/10">
               <Users className="size-7 text-primary" />

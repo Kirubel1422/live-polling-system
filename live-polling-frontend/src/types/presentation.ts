@@ -179,6 +179,7 @@ export interface Template {
   description: string;
   thumbnail: string;
   category: string;
+  joinCode?: string;
   slides: Partial<Slide>[];
 }
 

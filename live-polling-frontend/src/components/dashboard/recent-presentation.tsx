@@ -24,6 +24,9 @@ import {
 } from "@/api/presentations.api";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { useAppDispatch } from "@/store/hooks";
+import { addPresentation } from "@/store/presentationsSlice";
+import presentationsApi from "@/api/presentations.api";
 
 export default function RecentPresentations({
   searchQuery,
@@ -38,6 +41,7 @@ export default function RecentPresentations({
   const [deletePresentationApi] = useDeletePresentationMutation();
   const [duplicatePresentationApi] = useDuplicatePresentationMutation();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const dispatch = useAppDispatch();
 
   const filteredPresentations = presentations.filter((p) =>
     p.title.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -46,6 +50,14 @@ export default function RecentPresentations({
   const handleDeletePresentation = async (id: string) => {
     try {
       await deletePresentationApi(id).unwrap();
+      
+      // Instantly remove from RTK Query cache
+      dispatch(
+        presentationsApi.util.updateQueryData("getPresentations", undefined, (draft) => {
+          return draft.filter((p) => p.id !== id);
+        })
+      );
+
       toast.success("Presentation deleted");
     } catch (e) {
       toast.error("Failed to delete presentation");
@@ -54,7 +66,18 @@ export default function RecentPresentations({
 
   const handleDuplicatePresentation = async (id: string) => {
     try {
-      await duplicatePresentationApi(id).unwrap();
+      const duplicated = await duplicatePresentationApi(id).unwrap();
+      
+      // Instantly update RTK Query cache for Dashboard list
+      dispatch(
+        presentationsApi.util.updateQueryData("getPresentations", undefined, (draft) => {
+          draft.unshift(duplicated);
+        })
+      );
+      
+      // Update Redux state for Editor
+      dispatch(addPresentation(duplicated as any));
+      
       toast.success("Presentation duplicated");
     } catch (e) {
       toast.error("Failed to duplicate presentation");
