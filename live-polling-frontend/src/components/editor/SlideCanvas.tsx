@@ -132,6 +132,7 @@ export function renderSlideContent(
           slide={slide}
           presentationId={presentationId}
           isPreview={isPreview}
+          responses={responses}
         />
       );
     case "scales":
@@ -1111,11 +1112,13 @@ function RankingContent({
   thumbnailSize,
   presentationId,
   isPreview,
+  responses = [],
 }: {
   thumbnailSize?: ThumbnailSize | undefined;
   slide: RankingSlide;
   presentationId?: string | undefined;
   isPreview?: boolean | undefined;
+  responses?: any[] | undefined;
 }) {
   const dispatch = useAppDispatch();
   const isThumbnail = thumbnailSize !== false;
@@ -1200,6 +1203,74 @@ function RankingContent({
       </div>
     );
   }
+
+  const totalResponses = responses?.length || 0;
+  const itemsArray = Array.isArray((slide as any).options || slide.items) ? ((slide as any).options || slide.items) : [];
+  const N = itemsArray.length;
+
+  let displayItems = [...itemsArray];
+  const itemScores: Record<string, number> = {};
+  const itemCounts: Record<string, number> = {};
+
+  itemsArray.forEach((item: any) => {
+    itemScores[item.id] = 0;
+    itemCounts[item.id] = 0;
+  });
+
+  if (totalResponses > 0) {
+    responses.forEach((response: any) => {
+      if (!response) return;
+
+      // Case 1: Object format: { [itemId]: rank } (rank is 1-based, e.g. 1, 2, 3)
+      if (typeof response === "object" && !Array.isArray(response)) {
+        Object.entries(response).forEach(([id, rankVal]) => {
+          if (id in itemScores) {
+            const rank = Number(rankVal);
+            if (!isNaN(rank)) {
+              const points = N - (rank - 1);
+              itemScores[id] += points;
+              itemCounts[id] += 1;
+            }
+          }
+        });
+      }
+      // Case 2: Array format: could be an array of objects [ { id: "item-1" } ] or strings [ "item-1" ]
+      else if (Array.isArray(response)) {
+        response.forEach((itemVal: any, index: number) => {
+          let id = "";
+          if (typeof itemVal === "string") {
+            id = itemVal;
+          } else if (itemVal && typeof itemVal === "object" && "id" in itemVal) {
+            id = itemVal.id;
+          }
+
+          if (id && id in itemScores) {
+            const points = N - index;
+            itemScores[id] += points;
+            itemCounts[id] += 1;
+          }
+        });
+      }
+      // Case 3: Comma-separated string of item IDs
+      else if (typeof response === "string") {
+        const rankedIds = response.split(",").map((s) => s.trim());
+        rankedIds.forEach((id: string, index: number) => {
+          if (id && id in itemScores) {
+            const points = N - index;
+            itemScores[id] += points;
+            itemCounts[id] += 1;
+          }
+        });
+      }
+    });
+
+    displayItems.sort((a, b) => {
+      const avgA = itemCounts[a.id] > 0 ? itemScores[a.id] / itemCounts[a.id] : 0;
+      const avgB = itemCounts[b.id] > 0 ? itemScores[b.id] / itemCounts[b.id] : 0;
+      return avgB - avgA;
+    });
+  }
+
   return (
     <div className="flex h-full w-full flex-col items-center justify-center">
       <InlineTextEdit
@@ -1220,40 +1291,67 @@ function RankingContent({
           style={{ color: slide.theme.textColor }}
         />
       )}
-      <div className="w-full max-w-md space-y-3">
-        {(() => {
-          const itemsArray = Array.isArray((slide as any).options || slide.items) ? ((slide as any).options || slide.items) : [];
-          return itemsArray.map((item: any, index: number) => (
+      <div className="w-full max-w-xl space-y-3">
+        {displayItems.map((item: any, index: number) => {
+          const avgScore = totalResponses > 0 && itemCounts[item.id] > 0 
+            ? itemScores[item.id] / totalResponses 
+            : 0;
+          const percentage = N > 0 ? (avgScore / N) * 100 : 0;
+
+          const avgPointsForResponded = itemCounts[item.id] > 0 ? itemScores[item.id] / itemCounts[item.id] : 0;
+          const avgRank = N - avgPointsForResponded + 1;
+
+          return (
             <div
               key={item.id}
-              className="flex items-center gap-3 rounded-xl p-4 transition-all"
+              className="relative flex items-center justify-between rounded-xl p-4 overflow-hidden border border-slate-200/50 dark:border-white/10"
               style={{
-                backgroundColor: item.color || slide.theme.accentColor + "20",
+                backgroundColor: "rgba(255,255,255,0.03)",
               }}
             >
-              <span
-                className="flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-bold"
-                style={{
-                  backgroundColor: slide.theme.accentColor,
-                  color: "#fff",
-                }}
-              >
-                {index + 1}
-              </span>
-              <InlineTextEdit
-                text={item.text || ""}
-                placeholder={`Item ${index + 1}`}
-                isEditable={(!isThumbnail && !isPreview)}
-                onUpdate={(newText) => {
-                  const newItems = itemsArray.map((o: any) => o.id === item.id ? { ...o, text: newText } : o);
-                  handleUpdate({ options: newItems });
-                }}
-                className="flex-1 w-full text-left"
-                style={{ color: slide.theme.textColor }}
-              />
+              {totalResponses > 0 && (
+                <div
+                  className="absolute inset-y-0 left-0 z-0 transition-all duration-500 ease-in-out opacity-20"
+                  style={{
+                    backgroundColor: item.color || slide.theme.accentColor,
+                    width: `${percentage}%`,
+                  }}
+                />
+              )}
+
+              <div className="relative z-10 flex items-center gap-3 flex-1 min-w-0">
+                <span
+                  className="flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
+                  style={{
+                    backgroundColor: item.color || slide.theme.accentColor,
+                  }}
+                >
+                  {index + 1}
+                </span>
+                <InlineTextEdit
+                  text={item.text || ""}
+                  placeholder={`Item ${index + 1}`}
+                  isEditable={(!isThumbnail && !isPreview)}
+                  onUpdate={(newText) => {
+                    const newItems = itemsArray.map((o: any) => o.id === item.id ? { ...o, text: newText } : o);
+                    handleUpdate({ options: newItems });
+                  }}
+                  className="flex-1 w-full text-left"
+                  style={{ color: slide.theme.textColor }}
+                />
+              </div>
+
+              {totalResponses > 0 && (
+                <div className="relative z-10 ml-4 flex items-center gap-3 shrink-0 text-sm font-bold animate-fade-in" style={{ color: slide.theme.textColor }}>
+                  <span className="opacity-70">Avg Rank: {avgRank.toFixed(1)}</span>
+                  <span className="px-2 py-0.5 rounded bg-black/10 dark:bg-white/10 text-xs">
+                    {itemCounts[item.id]} vote{itemCounts[item.id] !== 1 ? 's' : ''}
+                  </span>
+                </div>
+              )}
             </div>
-          ));
-        })()}
+          );
+        })}
       </div>
     </div>
   );

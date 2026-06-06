@@ -371,7 +371,7 @@ export default function Editor() {
       />
 
       <Dialog open={showExitWarning} onOpenChange={setShowExitWarning}>
-        <DialogContent className="rounded-[2rem] border border-slate-200/70 bg-white/[0.95] p-6 shadow-none backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/95">
+        <DialogContent className="rounded-[2rem] border border-slate-200/70 bg-white/[0.95] p-8 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-[#0a1628]/60 sm:max-w-[40rem]">
           <DialogHeader>
             <DialogTitle className="text-2xl font-black tracking-[-0.035em] text-slate-950 dark:text-white">
               Unsaved Template
