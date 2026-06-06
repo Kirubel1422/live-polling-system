@@ -441,6 +441,13 @@ const seedTemplates = async () => {
   logger.info("Synchronizing database schema...");
   await AppDataSource.synchronize(false);
 
+  try {
+    logger.info("Ensuring joinCode column exists on templates table...");
+    await AppDataSource.query(`ALTER TABLE "templates" ADD COLUMN IF NOT EXISTS "joinCode" varchar UNIQUE`);
+  } catch (error) {
+    logger.warn(`Could not add joinCode column (it might already exist): ${error}`);
+  }
+
   const repo = AppDataSource.getRepository(TemplateEntity);
 
   logger.info("Checking for existing templates...");
@@ -454,6 +461,12 @@ const seedTemplates = async () => {
   logger.info("Seeding templates...");
   
   const entities = mockTemplates.map(template => {
+    let joinCode = "";
+    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const numbers = "0123456789";
+    for (let i = 0; i < 4; i++) joinCode += letters.charAt(Math.floor(Math.random() * letters.length));
+    for (let i = 0; i < 2; i++) joinCode += numbers.charAt(Math.floor(Math.random() * numbers.length));
+
     return repo.create({
       id: template.id,
       title: template.title,
@@ -462,6 +475,7 @@ const seedTemplates = async () => {
       category: template.category,
       slides: template.slides,
       isPublic: true,
+      joinCode: joinCode,
     });
   });
 

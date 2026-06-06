@@ -41,7 +41,8 @@ export class AIGeneratorService {
 
   private async *streamOpenRouter(
     messages: { role: string; content: string }[],
-    schemaType: "presentation" | "enhancement"
+    schemaType: "presentation" | "enhancement",
+    modelName: string = ENV.AI_MODEL_NAME || ""
   ): AsyncGenerator<any, void, unknown> {
     const apiKey = ENV.AI_API_KEY;
     if (!apiKey) {
@@ -57,7 +58,7 @@ export class AIGeneratorService {
         "X-Title": "Live Polling System", 
       },
       body: JSON.stringify({
-        model: ENV.AI_MODEL_NAME,
+        model: modelName,
         include_reasoning: true,
         stream: true,
         max_tokens: 8192,
@@ -77,6 +78,7 @@ export class AIGeneratorService {
     if (!reader) throw new Error("No response body stream");
 
     let buffer = "";
+    let receivedReasoning = false;
 
     while (true) {
       const { done, value } = await reader.read();
@@ -96,6 +98,7 @@ export class AIGeneratorService {
             const data = JSON.parse(trimmed.substring(6));
             const delta = data.choices?.[0]?.delta;
             if (delta?.reasoning) {
+              receivedReasoning = true;
               yield { type: "reasoning", text: delta.reasoning };
             }
             if (delta?.content) {
@@ -107,6 +110,10 @@ export class AIGeneratorService {
           }
         }
       }
+    }
+
+    if (!receivedReasoning) {
+      logger.warn(`Model ${modelName} does not support streaming thoughts (reasoning) or no thoughts were generated.`);
     }
 
     if (!fullContent) {

@@ -35,7 +35,7 @@ export function ChatBubble({ msg }: { msg: ChatMessage }) {
 }
 
 function extractReadableThoughts(rawText: string) {
-  if (!rawText) return [];
+  if (!rawText || rawText === 'Please wait ...') return [];
 
   let text = rawText.replace(/"[a-zA-Z0-9_]+"\s*:\s*/g, '');
   text = text.replace(/[{}\[\]",]/g, '\n');
@@ -280,16 +280,14 @@ export function IdlePreview() {
 
 export function GeneratingPreview({
   factLines,
-  factKey,
   isReasoning = false,
 }: {
   factLines: string[];
-  factKey: string;
   isReasoning?: boolean;
 }) {
   return (
     <div className="flex flex-col items-center justify-center">
-      <div className={cn("p-4", !isReasoning && "dark:bg-white/[0.04] rounded-[2rem] bg-white/60 backdrop-blur-xl")}>
+      <div className={cn("p-4")}>
         <Lottie
           animationData={generating}
           loop
@@ -316,12 +314,18 @@ export function GeneratingPreview({
             ))}
           </div>
         ) : (
-          <p
-            key={factKey}
-            className="inline-block w-0 overflow-hidden whitespace-nowrap text-center text-base font-black text-primary animate-[typing_2.5s_steps(45,end)_forwards]"
-          >
-            {factLines[0]}
-          </p>
+          <div className="flex h-full items-center justify-center">
+            <div className="relative flex size-14 items-center justify-center">
+              {/* Outer spinning ring */}
+              <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-primary border-r-[#33C3FF] opacity-80" />
+              
+              {/* Inner reverse spinning ring */}
+              <div className="absolute size-9 animate-[spin_1.5s_linear_infinite_reverse] rounded-full border-2 border-transparent border-b-primary border-l-[#33C3FF] opacity-60" />
+              
+              {/* Center dot */}
+              <div className="size-2 rounded-full bg-primary shadow-[0_0_8px_#33C3FF]" />
+            </div>
+          </div>
         )}
       </div>
     </div>
@@ -337,7 +341,7 @@ export function RightPanel({
 }) {
   const loadingFact = useLoadingFact(isThinking);
 
-  const isReasoning = Boolean(thinkingText && thinkingText !== 'Loading ...');
+  const isReasoning = Boolean(thinkingText && thinkingText !== 'Please wait ...');
   const displayLines = isReasoning
     ? extractReadableThoughts(thinkingText)
     : [loadingFact];
@@ -353,7 +357,6 @@ export function RightPanel({
         ) : (
           <GeneratingPreview
             factLines={displayLines}
-            factKey={isReasoning ? 'reasoning' : loadingFact}
             isReasoning={isReasoning}
           />
         )}

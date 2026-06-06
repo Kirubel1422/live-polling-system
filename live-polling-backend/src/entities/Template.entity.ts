@@ -42,6 +42,10 @@ export class TemplateEntity {
   @Column({ type: "jsonb", nullable: true })
   theme?: SlideThemeJson;
 
+  /** A mock join code for template previewing */
+  @Column({ type: "varchar", nullable: true, unique: true })
+  joinCode?: string;
+
   /** If false, template is system-level and not editable by users */
   @Column({ default: true })
   isPublic!: boolean;

@@ -50,9 +50,6 @@ export function ProfileSectionContent({
   firstName,
   lastName,
   email,
-  setFirstName,
-  setLastName,
-  setEmail,
   provider,
   avatarUrl,
   onSaveProfile,
@@ -62,12 +59,9 @@ export function ProfileSectionContent({
   firstName: string;
   lastName: string;
   email: string;
-  setFirstName: (v: string) => void;
-  setLastName: (v: string) => void;
-  setEmail: (v: string) => void;
   provider?: string;
   avatarUrl?: string;
-  onSaveProfile?: () => void;
+  onSaveProfile?: (firstName: string, lastName: string, email: string) => void;
   onUpdatePassword?: (
     currentPass: string | undefined,
     newPass: string,
@@ -115,10 +109,7 @@ export function ProfileSectionContent({
       <Form {...profileForm}>
         <form
           onSubmit={profileForm.handleSubmit((data) => {
-            setFirstName(data.firstName);
-            setLastName(data.lastName);
-            setEmail(data.email);
-            setTimeout(() => onSaveProfile?.(), 0);
+            onSaveProfile?.(data.firstName, data.lastName, data.email);
           })}
           className="flex flex-col gap-5"
         >
@@ -454,12 +445,12 @@ export function SettingsContent({
   const [uploadAvatar] = useUploadAvatarMutation();
   const [updateNotifications] = useUpdateNotificationsMutation();
 
-  const handleSaveProfile = async () => {
+  const handleSaveProfile = async (firstName: string, lastName: string, email: string) => {
     try {
       await updateProfile({
-        firstName: state.firstName,
-        lastName: state.lastName,
-        email: state.email,
+        firstName,
+        lastName,
+        email,
       }).unwrap();
       toast.success('Profile updated successfully');
     } catch (e: any) {
@@ -545,9 +536,6 @@ export function SettingsContent({
           firstName={state.firstName}
           lastName={state.lastName}
           email={state.email}
-          setFirstName={state.setFirstName}
-          setLastName={state.setLastName}
-          setEmail={state.setEmail}
           provider={state.provider}
           avatarUrl={user?.avatarUrl}
           onSaveProfile={handleSaveProfile}

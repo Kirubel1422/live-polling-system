@@ -1,4 +1,4 @@
-import { Toaster } from './components/ui'
+import { SonnerToaster } from './components/ui'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { 
   Dashboard,
@@ -40,7 +40,7 @@ function App() {
         
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      <Toaster />
+      <SonnerToaster />
     </>
   )
 }

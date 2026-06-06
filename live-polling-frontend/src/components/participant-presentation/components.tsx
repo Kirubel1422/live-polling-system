@@ -83,17 +83,59 @@ export function PresenterOfflineView() {
 
 export function KickedOutView({ onBack }: { onBack: () => void }) {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-[#1a1a2e]">
-      <div className="size-24 rounded-full bg-red-500/20 flex items-center justify-center mb-6">
-        <svg className="size-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-        </svg>
+    <div className="relative isolate flex min-h-screen items-center justify-center overflow-hidden bg-slate-50 px-4 py-10 text-slate-900 transition-colors dark:bg-[#07111f] dark:text-white">
+      <div className="absolute inset-0 -z-20 bg-[radial-gradient(circle_at_top_left,rgba(5,152,206,.18),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(51,195,255,.18),transparent_34%)] dark:bg-[radial-gradient(circle_at_top_left,rgba(5,152,206,.18),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(51,195,255,.12),transparent_34%)]" />
+      <div className="premium-grid absolute inset-0 -z-10 opacity-75" />
+
+      <div className="absolute left-1/2 top-1/2 -z-10 size-[620px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/8 blur-3xl" />
+      <div className="absolute left-[18%] top-[18%] -z-10 size-72 rounded-full bg-primary/14 blur-3xl dark:bg-primary/10" />
+      <div className="absolute bottom-[14%] right-[12%] -z-10 size-80 rounded-full bg-[#33C3FF]/16 blur-3xl dark:bg-[#33C3FF]/10" />
+
+      <div className="fade-up relative z-10 w-full max-w-md rounded-2xl bg-white/[0.88] px-8 py-9 text-center backdrop-blur-xl dark:bg-white/[0.06]">
+        <div className="mx-auto mb-6 flex size-20 items-center justify-center rounded-3xl bg-red-500/10 dark:bg-red-500/15">
+          <svg
+            className="size-10 text-red-500 dark:text-red-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
+            />
+          </svg>
+        </div>
+
+        <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-red-200/70 bg-red-50/80 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-500 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400">
+          <span className="size-2 rounded-full bg-red-500 dark:bg-red-400" />
+          Session access removed
+        </div>
+
+        <h2 className="text-3xl font-black tracking-[-0.035em] text-slate-950 dark:text-white">
+          You&apos;ve been kicked out
+        </h2>
+
+        <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-slate-500 dark:text-slate-400">
+          The presenter has removed you from this live presentation session.
+        </p>
+
+        <div className="mt-8 rounded-2xl bg-slate-50/70 px-4 py-4 dark:bg-white/[0.04]">
+          <p className="text-xs font-semibold leading-5 text-slate-400 dark:text-slate-500">
+            You can return to the start page and join another session if you have a
+            valid join code.
+          </p>
+        </div>
+
+        <Button
+          size="lg"
+          onClick={onBack}
+          className="mt-6 h-12 w-full rounded-2xl bg-primary font-black text-white shadow-none transition-all duration-300 hover:-translate-y-0.5 hover:bg-primary/90"
+        >
+          Back to Start
+        </Button>
       </div>
-      <h2 className="text-3xl font-bold text-white mb-4">You've been kicked out</h2>
-      <p className="text-lg text-white/70 mb-8 max-w-md">
-        The presenter has removed you from this live presentation session.
-      </p>
-      <Button size="lg" onClick={onBack}>Back to Start</Button>
     </div>
   );
 }
