@@ -9,6 +9,7 @@ import crypto from "crypto";
 import { sendEmail } from "src/utils/mailer";
 import { enqueueEmail } from "src/queues/email.queue";
 import logger from "src/utils/logger/logger";
+import { createVerificationEmail, createPasswordResetEmail } from "src/templates/mail.templates";
 
 export class AuthService {
   private userRepo = AppDataSource.getRepository(UserEntity);
@@ -35,7 +36,7 @@ export class AuthService {
 
     // Send verification email
     const verificationUrl = `${ENV.CLIENT_URL[0]}/verify-email?token=${verificationToken}`;
-    const emailHtml = `<p>Hi ${savedUser.displayName},</p><p>Please verify your email address by clicking the link below:</p><p><a href="${verificationUrl}">${verificationUrl}</a></p>`;
+    const emailHtml = createVerificationEmail(savedUser.displayName ?? "User", verificationUrl);
 
     if (ENV.BULLMQ_ENABLED) {
       enqueueEmail({
@@ -84,7 +85,7 @@ export class AuthService {
     await this.userRepo.save(user);
 
     const resetUrl = `${ENV.CLIENT_URL[0]}/reset-password?token=${resetToken}`;
-    const emailHtml = `<p>You requested a password reset.</p><p>Click here to reset your password:</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>If you did not request this, please ignore this email.</p>`;
+    const emailHtml = createPasswordResetEmail(resetUrl);
 
     if (ENV.BULLMQ_ENABLED) {
       await enqueueEmail({
